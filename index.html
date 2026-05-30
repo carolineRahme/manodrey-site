@@ -266,7 +266,7 @@
       box-shadow: none;
       transition: padding 0.35s ease, top 0.35s ease;
       opacity: 0;
-      animation: uiFadeIn 1.2s 9.5s forwards;
+      animation: uiFadeIn 1.2s 11.5s forwards;
     }
     @keyframes uiFadeIn {
       from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
@@ -578,7 +578,7 @@
       margin: 0 auto 32px;
       filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.55));
       opacity: 0;
-      animation: fadeIn 0.6s 9.3s forwards;
+      animation: fadeIn 0.6s 11.3s forwards;
     }
     .hero-title canvas {
       position: absolute;
@@ -603,7 +603,7 @@
       height: clamp(46px, 6vw, 70px);
       margin: 0 auto 16px;
       opacity: 0;
-      animation: fadeIn 1s 9.7s forwards;
+      animation: fadeIn 1s 11.7s forwards;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -654,7 +654,7 @@
       height: 32px;
       margin: 0 auto 48px;
       opacity: 0;
-      animation: fadeIn 1s 10s forwards;
+      animation: fadeIn 1s 12s forwards;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -711,7 +711,7 @@
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
-      animation: fadeUp 1s 10.3s both;
+      animation: fadeUp 1s 12.3s both;
     }
     .cta {
       display: inline-flex;
@@ -834,7 +834,7 @@
       transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
       opacity: 0;
-      animation: fabFadeIn 1.2s 10s forwards;
+      animation: fabFadeIn 1.2s 12s forwards;
     }
     @keyframes fabFadeIn {
       from { opacity: 0; }
@@ -2753,9 +2753,8 @@
           density: 4
         });
         __heroSkipMagic = magic;
-        // Particules scintillent pendant toute la vidéo. À 9.5s (fin de la vidéo de 10s)
-        // elles convergent pour former « Manodrey » — title card finale.
-        __heroAssembleTimer = setTimeout(() => magic.assemble(), 9500);
+        // Manodrey s'assemble à 11.5s — après le close-up de la vidéo, début de la 2e boucle
+        __heroAssembleTimer = setTimeout(() => magic.assemble(), 11500);
 
 
 
@@ -2845,10 +2844,10 @@
 
         };
 
-        // Particules sur tagline/sub/CTAs/nav démarrent à la fin de la vidéo (≈ 10s),
+        // Particules sur tagline/sub/CTAs/nav démarrent à 12s,
         // juste après l'assemblage du Manodrey.
         __heroSkipParticles = initParticles;
-        __heroParticlesTimer = setTimeout(initParticles, 10000);
+        __heroParticlesTimer = setTimeout(initParticles, 12000);
 
         // Click sur la zone vidéo du hero → skip tout l'intro
         const heroEl = document.querySelector('.hero');
