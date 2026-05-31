@@ -600,20 +600,21 @@
     .reveal-text .ch {
       display: inline-block;
       opacity: 0;
-      filter: blur(10px);
-      transform: translateY(8px);
+      transform-origin: center;
+      transform: scaleX(2.4) translateX(18px);
+      filter: blur(7px);
       will-change: opacity, filter, transform;
-      text-shadow: 0 0 24px rgba(255, 255, 255, 0.35);
     }
-    .reveal-text .ch.space { width: 0.3em; }
-    .reveal-text.revealed .ch {
-      animation: textMaterialize 1.4s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+    .reveal-text .ch.space { width: 0.3em; transform: none; filter: none; opacity: 1; }
+    .reveal-text.revealed .ch:not(.space) {
+      animation: kineticReveal 1.3s cubic-bezier(0.2, 0.78, 0.28, 1) forwards;
       animation-delay: var(--d, 0s);
     }
-    @keyframes textMaterialize {
-      0%   { opacity: 0;    filter: blur(10px); transform: translateY(8px); }
-      55%  { opacity: 0.55; filter: blur(3px);  transform: translateY(2px); }
-      100% { opacity: 1;    filter: blur(0);    transform: translateY(0); text-shadow: 0 0 18px rgba(255, 255, 255, 0.15); }
+    @keyframes kineticReveal {
+      0%   { opacity: 0;    transform: scaleX(2.4) translateX(18px); filter: blur(7px); }
+      35%  { opacity: 0.9;  transform: scaleX(1.55) translateX(8px); filter: blur(3px); }
+      70%  { opacity: 1;    transform: scaleX(1.1) translateX(2px);  filter: blur(0.6px); }
+      100% { opacity: 1;    transform: scaleX(1) translateX(0);      filter: blur(0); text-shadow: 0 0 18px rgba(255, 255, 255, 0.18); }
     }
     .hero-title canvas {
       position: absolute;
