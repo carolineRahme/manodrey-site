@@ -580,6 +580,28 @@
       opacity: 0;
       animation: fadeIn 0.6s 999s forwards;
     }
+    .gooey-stage {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: url(#gooey-threshold);
+    }
+    .gooey-text {
+      position: absolute;
+      display: inline-block;
+      user-select: none;
+      text-align: center;
+      font-family: 'DM Serif Display', 'Bodoni Moda', serif;
+      font-size: clamp(60px, 13vw, 170px);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      color: #ffffff;
+      white-space: nowrap;
+      opacity: 0;
+    }
     .hero-title canvas {
       position: absolute;
       inset: 0;
@@ -1377,8 +1399,23 @@
     </video>
     <div class="hero-video-overlay" aria-hidden="true"></div>
     <div class="hero-content">
-      <div class="hero-title" id="vapor-title">
+      <div class="hero-title gooey-container" id="gooey-title">
         <h1 class="visually-hidden">Manodrey · Cinéma · Vidéo · Télévision</h1>
+        <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+          <defs>
+            <filter id="gooey-threshold">
+              <feColorMatrix in="SourceGraphic" type="matrix"
+                values="1 0 0 0 0
+                        0 1 0 0 0
+                        0 0 1 0 0
+                        0 0 0 255 -140"/>
+            </filter>
+          </defs>
+        </svg>
+        <div class="gooey-stage">
+          <span class="gooey-text" id="gooey-text-1"></span>
+          <span class="gooey-text" id="gooey-text-2"></span>
+        </div>
       </div>
       <div class="hero-tagline" id="particles-tagline">
         <span class="hero-tagline-text">Là où l'imaginaire prend vie.</span>
@@ -2730,29 +2767,97 @@
       if (typeof __heroSkipParticles === 'function') __heroSkipParticles();
     }
 
-    // Init MagicReveal sur Manodrey — shimmer pendant la vidéo, assemble à la fin
+    // ============ GOOEY TEXT MORPHING (Manodrey) ============
+    class GooeyText {
+      constructor(opts) {
+        this.texts = opts.texts || [];
+        this.morphTime = opts.morphTime || 1;
+        this.cooldownTime = opts.cooldownTime || 0.25;
+        this.text1 = document.getElementById(opts.text1Id);
+        this.text2 = document.getElementById(opts.text2Id);
+        this.textIndex = this.texts.length - 1;
+        this.time = Date.now();
+        this.morph = 0;
+        this.cooldown = this.cooldownTime;
+        this.running = false;
+        // Initial fill
+        if (this.text1 && this.text2 && this.texts.length) {
+          this.text1.textContent = this.texts[this.textIndex];
+          this.text2.textContent = this.texts[(this.textIndex + 1) % this.texts.length];
+        }
+      }
+      setMorph(fraction) {
+        if (!this.text1 || !this.text2) return;
+        this.text2.style.filter = `blur(${Math.min(8 / fraction - 8, 100)}px)`;
+        this.text2.style.opacity = `${Math.pow(fraction, 0.4) * 100}%`;
+        const inv = 1 - fraction;
+        this.text1.style.filter = `blur(${Math.min(8 / inv - 8, 100)}px)`;
+        this.text1.style.opacity = `${Math.pow(inv, 0.4) * 100}%`;
+      }
+      doCooldown() {
+        this.morph = 0;
+        if (!this.text1 || !this.text2) return;
+        this.text2.style.filter = '';
+        this.text2.style.opacity = '100%';
+        this.text1.style.filter = '';
+        this.text1.style.opacity = '0%';
+      }
+      doMorph() {
+        this.morph -= this.cooldown;
+        this.cooldown = 0;
+        let fraction = this.morph / this.morphTime;
+        if (fraction > 1) {
+          this.cooldown = this.cooldownTime;
+          fraction = 1;
+        }
+        this.setMorph(fraction);
+      }
+      animate() {
+        if (!this.running) return;
+        requestAnimationFrame(() => this.animate());
+        const newTime = Date.now();
+        const shouldIncrementIndex = this.cooldown > 0;
+        const dt = (newTime - this.time) / 1000;
+        this.time = newTime;
+        this.cooldown -= dt;
+        if (this.cooldown <= 0) {
+          if (shouldIncrementIndex) {
+            this.textIndex = (this.textIndex + 1) % this.texts.length;
+            if (this.text1 && this.text2) {
+              this.text1.textContent = this.texts[this.textIndex % this.texts.length];
+              this.text2.textContent = this.texts[(this.textIndex + 1) % this.texts.length];
+            }
+          }
+          this.doMorph();
+        } else {
+          this.doCooldown();
+        }
+      }
+      start() {
+        if (this.running) return;
+        this.running = true;
+        this.time = Date.now();
+        this.animate();
+      }
+    }
+
+    // Init GooeyText sur Manodrey — démarre à la fin de la vidéo
     window.addEventListener('load', () => {
-      const container = document.getElementById('vapor-title');
+      const container = document.getElementById('gooey-title');
       if (!container) return;
       const ready = document.fonts && document.fonts.load
-        ? document.fonts.load('400 220px "DM Serif Display"')
+        ? document.fonts.load('400 170px "DM Serif Display"')
         : Promise.resolve();
       ready.then(() => {
-        const computeSize = () => {
-          const w = window.innerWidth;
-          return Math.max(72, Math.min(220, w * 0.165));
-        };
-        const magic = new MagicReveal(container, {
-          text: 'Manodrey',
-          fontFamily: '"DM Serif Display", "Bodoni Moda", serif',
-          fontSize: computeSize(),
-          fontWeight: 400,
-          color: 'rgba(255, 255, 255, 1)',
-          spread: 60,
-          speed: 0.6,
-          density: 4
+        const gooey = new GooeyText({
+          texts: ['Manodrey', 'Cinéma', 'Vidéo', 'Télévision'],
+          morphTime: 1.2,
+          cooldownTime: 1.8,
+          text1Id: 'gooey-text-1',
+          text2Id: 'gooey-text-2'
         });
-        __heroSkipMagic = magic;
+        // Shim pour skipHeroIntro : démarre le gooey au lieu de magic.assemble
+        __heroSkipMagic = { state: 'shimmering', assemble() { gooey.start(); } };
         // Le reveal se déclenche via l'event "ended" de la vidéo (voir plus bas) — pas de timeout
 
 
