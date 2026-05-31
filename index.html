@@ -276,6 +276,7 @@
     /* Skip hero intro on click → tout est instantanément visible */
     body.hero-skipped header,
     body.hero-skipped .fab,
+    body.hero-skipped .hero-title,
     body.hero-skipped .hero-tagline,
     body.hero-skipped .hero-sub,
     body.hero-skipped .hero-actions {
@@ -580,27 +581,39 @@
       opacity: 0;
       animation: fadeIn 0.6s 999s forwards;
     }
-    .gooey-stage {
-      position: absolute;
-      inset: 0;
+    .reveal-container {
       display: flex;
       align-items: center;
       justify-content: center;
-      filter: url(#gooey-threshold);
     }
-    .gooey-text {
-      position: absolute;
-      display: inline-block;
-      user-select: none;
-      text-align: center;
+    .reveal-text {
       font-family: 'DM Serif Display', 'Bodoni Moda', serif;
       font-size: clamp(60px, 13vw, 170px);
       font-weight: 400;
-      letter-spacing: -0.02em;
+      letter-spacing: 0.02em;
       line-height: 1;
       color: #ffffff;
+      margin: 0;
       white-space: nowrap;
+      display: inline-flex;
+    }
+    .reveal-text .ch {
+      display: inline-block;
       opacity: 0;
+      filter: blur(10px);
+      transform: translateY(8px);
+      will-change: opacity, filter, transform;
+      text-shadow: 0 0 24px rgba(255, 255, 255, 0.35);
+    }
+    .reveal-text .ch.space { width: 0.3em; }
+    .reveal-text.revealed .ch {
+      animation: textMaterialize 1.4s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+      animation-delay: var(--d, 0s);
+    }
+    @keyframes textMaterialize {
+      0%   { opacity: 0;    filter: blur(10px); transform: translateY(8px); }
+      55%  { opacity: 0.55; filter: blur(3px);  transform: translateY(2px); }
+      100% { opacity: 1;    filter: blur(0);    transform: translateY(0); text-shadow: 0 0 18px rgba(255, 255, 255, 0.15); }
     }
     .hero-title canvas {
       position: absolute;
@@ -1399,23 +1412,8 @@
     </video>
     <div class="hero-video-overlay" aria-hidden="true"></div>
     <div class="hero-content">
-      <div class="hero-title gooey-container" id="gooey-title">
-        <h1 class="visually-hidden">Manodrey · Cinéma · Vidéo · Télévision</h1>
-        <svg width="0" height="0" aria-hidden="true" style="position:absolute">
-          <defs>
-            <filter id="gooey-threshold">
-              <feColorMatrix in="SourceGraphic" type="matrix"
-                values="1 0 0 0 0
-                        0 1 0 0 0
-                        0 0 1 0 0
-                        0 0 0 255 -140"/>
-            </filter>
-          </defs>
-        </svg>
-        <div class="gooey-stage">
-          <span class="gooey-text" id="gooey-text-1"></span>
-          <span class="gooey-text" id="gooey-text-2"></span>
-        </div>
+      <div class="hero-title reveal-container" id="reveal-title">
+        <h1 class="reveal-text" id="reveal-text">Manodrey</h1>
       </div>
       <div class="hero-tagline" id="particles-tagline">
         <span class="hero-tagline-text">Là où l'imaginaire prend vie.</span>
@@ -2767,97 +2765,48 @@
       if (typeof __heroSkipParticles === 'function') __heroSkipParticles();
     }
 
-    // ============ GOOEY TEXT MORPHING (Manodrey) ============
-    class GooeyText {
-      constructor(opts) {
-        this.texts = opts.texts || [];
-        this.morphTime = opts.morphTime || 1;
-        this.cooldownTime = opts.cooldownTime || 0.25;
-        this.text1 = document.getElementById(opts.text1Id);
-        this.text2 = document.getElementById(opts.text2Id);
-        this.textIndex = this.texts.length - 1;
-        this.time = Date.now();
-        this.morph = 0;
-        this.cooldown = this.cooldownTime;
-        this.running = false;
-        // Initial fill
-        if (this.text1 && this.text2 && this.texts.length) {
-          this.text1.textContent = this.texts[this.textIndex];
-          this.text2.textContent = this.texts[(this.textIndex + 1) % this.texts.length];
-        }
-      }
-      setMorph(fraction) {
-        if (!this.text1 || !this.text2) return;
-        this.text2.style.filter = `blur(${Math.min(8 / fraction - 8, 100)}px)`;
-        this.text2.style.opacity = `${Math.pow(fraction, 0.4) * 100}%`;
-        const inv = 1 - fraction;
-        this.text1.style.filter = `blur(${Math.min(8 / inv - 8, 100)}px)`;
-        this.text1.style.opacity = `${Math.pow(inv, 0.4) * 100}%`;
-      }
-      doCooldown() {
-        this.morph = 0;
-        if (!this.text1 || !this.text2) return;
-        this.text2.style.filter = '';
-        this.text2.style.opacity = '100%';
-        this.text1.style.filter = '';
-        this.text1.style.opacity = '0%';
-      }
-      doMorph() {
-        this.morph -= this.cooldown;
-        this.cooldown = 0;
-        let fraction = this.morph / this.morphTime;
-        if (fraction > 1) {
-          this.cooldown = this.cooldownTime;
-          fraction = 1;
-        }
-        this.setMorph(fraction);
-      }
-      animate() {
-        if (!this.running) return;
-        requestAnimationFrame(() => this.animate());
-        const newTime = Date.now();
-        const shouldIncrementIndex = this.cooldown > 0;
-        const dt = (newTime - this.time) / 1000;
-        this.time = newTime;
-        this.cooldown -= dt;
-        if (this.cooldown <= 0) {
-          if (shouldIncrementIndex) {
-            this.textIndex = (this.textIndex + 1) % this.texts.length;
-            if (this.text1 && this.text2) {
-              this.text1.textContent = this.texts[this.textIndex % this.texts.length];
-              this.text2.textContent = this.texts[(this.textIndex + 1) % this.texts.length];
-            }
-          }
-          this.doMorph();
-        } else {
-          this.doCooldown();
-        }
-      }
-      start() {
-        if (this.running) return;
-        this.running = true;
-        this.time = Date.now();
-        this.animate();
-      }
+    // ============ TEXT MATERIALIZE REVEAL (Manodrey) ============
+    // Split text into per-character spans + trigger staggered animation
+    function splitTextIntoChars(el) {
+      if (!el || el.dataset.split === '1') return;
+      const text = el.textContent;
+      el.textContent = '';
+      const frag = document.createDocumentFragment();
+      const chars = Array.from(text);
+      chars.forEach((c, i) => {
+        const span = document.createElement('span');
+        span.className = c === ' ' ? 'ch space' : 'ch';
+        span.textContent = c === ' ' ? ' ' : c;
+        span.style.setProperty('--d', (i * 0.08) + 's');
+        frag.appendChild(span);
+      });
+      el.appendChild(frag);
+      el.dataset.split = '1';
     }
 
-    // Init GooeyText sur Manodrey — démarre à la fin de la vidéo
+    const __revealEl = document.getElementById('reveal-text');
+    const __revealController = {
+      el: __revealEl,
+      state: 'shimmering',
+      assemble() {
+        if (!this.el) return;
+        splitTextIntoChars(this.el);
+        // Force reflow then add class to trigger animations
+        void this.el.offsetWidth;
+        this.el.classList.add('revealed');
+      }
+    };
+
+    // Init reveal sur Manodrey — déclenché à la fin de la vidéo
     window.addEventListener('load', () => {
-      const container = document.getElementById('gooey-title');
+      const container = document.getElementById('reveal-title');
       if (!container) return;
       const ready = document.fonts && document.fonts.load
         ? document.fonts.load('400 170px "DM Serif Display"')
         : Promise.resolve();
       ready.then(() => {
-        const gooey = new GooeyText({
-          texts: ['Manodrey', 'Cinéma', 'Vidéo', 'Télévision'],
-          morphTime: 1.2,
-          cooldownTime: 1.8,
-          text1Id: 'gooey-text-1',
-          text2Id: 'gooey-text-2'
-        });
-        // Shim pour skipHeroIntro : démarre le gooey au lieu de magic.assemble
-        __heroSkipMagic = { state: 'shimmering', assemble() { gooey.start(); } };
+        // Shim pour skipHeroIntro : déclenche le reveal
+        __heroSkipMagic = __revealController;
         // Le reveal se déclenche via l'event "ended" de la vidéo (voir plus bas) — pas de timeout
 
 
