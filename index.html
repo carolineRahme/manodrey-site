@@ -481,70 +481,16 @@
       opacity: 0;
       animation: fadeIn 0.6s 999s forwards;
     }
-    .reveal-container {
+    .stipple-container {
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    .reveal-text {
-      font-family: 'DM Serif Display', 'Bodoni Moda', serif;
-      font-size: clamp(60px, 13vw, 170px);
-      font-weight: 400;
-      letter-spacing: 0.02em;
-      line-height: 1;
-      color: #ffffff;
-      margin: 0;
-      white-space: nowrap;
-      display: inline-flex;
-    }
-    .reveal-text .ch {
-      display: inline-block;
-      opacity: 0;
-      filter: blur(12px);
-      will-change: opacity, filter, transform;
-      transform: translateX(8px);
-    }
-    .reveal-text .ch.space {
-      width: 0.32em;
-      opacity: 1;
-      filter: none;
-      transform: none;
-    }
-    .reveal-text.revealed .ch:not(.space) {
-      animation: lightSweepReveal 1.6s cubic-bezier(0.25, 0.8, 0.32, 1) forwards;
-      animation-delay: var(--d, 0s);
-    }
-    @keyframes lightSweepReveal {
-      0% {
-        opacity: 0;
-        filter: blur(12px);
-        transform: translateX(8px);
-        text-shadow: none;
-      }
-      35% {
-        opacity: 0.65;
-        filter: blur(7px);
-        transform: translateX(4px);
-        text-shadow: 0 0 14px rgba(255, 245, 210, 0.45);
-      }
-      65% {
-        opacity: 1;
-        filter: blur(2px);
-        transform: translateX(1px);
-        text-shadow: 0 0 28px rgba(255, 240, 200, 0.7), 0 0 60px rgba(212, 175, 122, 0.35);
-      }
-      85% {
-        opacity: 1;
-        filter: blur(0.3px);
-        transform: translateX(0);
-        text-shadow: 0 0 22px rgba(255, 245, 220, 0.45);
-      }
-      100% {
-        opacity: 1;
-        filter: blur(0);
-        transform: translateX(0);
-        text-shadow: 0 0 14px rgba(255, 255, 255, 0.15);
-      }
+    .stipple-container canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
     .hero-title canvas {
       position: absolute;
@@ -1322,8 +1268,8 @@
     </video>
     <div class="hero-video-overlay" aria-hidden="true"></div>
     <div class="hero-content">
-      <div class="hero-title reveal-container" id="reveal-title">
-        <h1 class="reveal-text" id="reveal-text">Manodrey</h1>
+      <div class="hero-title stipple-container" id="stipple-title">
+        <h1 class="visually-hidden">Manodrey</h1>
       </div>
       <div class="hero-tagline" id="particles-tagline">
         <span class="hero-tagline-text">Là où l'imaginaire prend vie.</span>
@@ -2650,49 +2596,163 @@
       if (typeof __heroSkipParticles === 'function') __heroSkipParticles();
     }
 
-    // ============ TEXT MATERIALIZE REVEAL (Manodrey) ============
-    // Split text into per-character spans + trigger staggered animation
-    function splitTextIntoChars(el) {
-      if (!el || el.dataset.split === '1') return;
-      const text = el.textContent;
-      el.textContent = '';
-      const frag = document.createDocumentFragment();
-      const chars = Array.from(text);
-      chars.forEach((c, i) => {
-        const span = document.createElement('span');
-        span.className = c === ' ' ? 'ch space' : 'ch';
-        span.textContent = c === ' ' ? ' ' : c;
-        span.style.setProperty('--d', (i * 0.11) + 's');
-        frag.appendChild(span);
-      });
-      el.appendChild(frag);
-      el.dataset.split = '1';
+    // ============ STIPPLE TEXT (Manodrey en points blancs) ============
+    class StippleText {
+      constructor(container, opts) {
+        this.container = container;
+        this.text = opts.text || '';
+        this.fontFamily = opts.fontFamily || 'sans-serif';
+        this.fontWeight = opts.fontWeight || 700;
+        this.color = opts.color || '#ffffff';
+        this.density = opts.density != null ? opts.density : 0.55;
+        this.dotSize = opts.dotSize != null ? opts.dotSize : 1.4;
+        this.sampleRate = opts.sampleRate || 2;
+        this.disperseInterval = opts.disperseInterval || 7500;
+        this.disperseDuration = opts.disperseDuration || 1400;
+        this.returnDuration = opts.returnDuration || 1400;
+        this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+        this.canvas = document.createElement('canvas');
+        this.canvas.style.cssText = 'display:block;pointer-events:none;';
+        this.ctx = this.canvas.getContext('2d');
+        container.appendChild(this.canvas);
+        this.particles = [];
+        this.state = 'idle';
+        this.stateStart = 0;
+        this.running = false;
+        window.addEventListener('resize', () => this.resize());
+        this.resize();
+      }
+      resize() {
+        const rect = this.container.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+        this.canvas.width = Math.floor(rect.width * this.dpr);
+        this.canvas.height = Math.floor(rect.height * this.dpr);
+        this.canvas.style.width = rect.width + 'px';
+        this.canvas.style.height = rect.height + 'px';
+        this.fontSize = Math.min(rect.height * 0.85, Math.max(60, rect.width * 0.13));
+        if (this.running) this.sampleText();
+      }
+      sampleText() {
+        const ctx = this.ctx, W = this.canvas.width, H = this.canvas.height;
+        const fs = this.fontSize * this.dpr;
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = '#fff';
+        ctx.font = this.fontWeight + ' ' + fs + 'px ' + this.fontFamily;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.text, W / 2, H / 2);
+        const data = ctx.getImageData(0, 0, W, H).data;
+        this.particles = [];
+        for (let y = 0; y < H; y += this.sampleRate) {
+          for (let x = 0; x < W; x += this.sampleRate) {
+            if (data[(y * W + x) * 4 + 3] > 128 && Math.random() < this.density) {
+              this.particles.push({
+                x: x + (Math.random() - 0.5) * 2,
+                y: y + (Math.random() - 0.5) * 2,
+                tx: x, ty: y, vx: 0, vy: 0,
+                size: this.dotSize * (0.5 + Math.random() * 1.2) * this.dpr,
+                opacity: 0
+              });
+            }
+          }
+        }
+        ctx.clearRect(0, 0, W, H);
+      }
+      disperse() {
+        if (this.state !== 'stable') return;
+        this.state = 'dispersing';
+        this.stateStart = performance.now();
+        for (let i = 0; i < this.particles.length; i++) {
+          const p = this.particles[i];
+          p.vx = (6 + Math.random() * 14) * this.dpr;
+          p.vy = (Math.random() - 0.5) * 4 * this.dpr;
+        }
+      }
+      start() {
+        if (this.running) return;
+        this.running = true;
+        this.sampleText();
+        this.state = 'appearing';
+        this.stateStart = performance.now();
+        requestAnimationFrame((t) => this.animate(t));
+        this._disperseTimer = setInterval(() => this.disperse(), this.disperseInterval);
+      }
+      animate(currentTime) {
+        if (!this.running) return;
+        requestAnimationFrame((t) => this.animate(t));
+        const ctx = this.ctx, W = this.canvas.width, H = this.canvas.height;
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = this.color;
+        const stateElapsed = currentTime - this.stateStart;
+        for (let i = 0; i < this.particles.length; i++) {
+          const p = this.particles[i];
+          if (this.state === 'appearing') {
+            const prog = Math.min(1, stateElapsed / 1400);
+            p.opacity = prog;
+            p.x += (p.tx - p.x) * 0.12 + (Math.random() - 0.5) * 0.4;
+            p.y += (p.ty - p.y) * 0.12 + (Math.random() - 0.5) * 0.4;
+            if (prog >= 1) this.state = 'stable';
+          } else if (this.state === 'stable') {
+            p.opacity = 0.85 + Math.random() * 0.15;
+            p.x = p.tx + (Math.random() - 0.5) * 1.2;
+            p.y = p.ty + (Math.random() - 0.5) * 1.2;
+          } else if (this.state === 'dispersing') {
+            p.x += p.vx * 0.5; p.y += p.vy * 0.5;
+            p.vx *= 0.98; p.vy *= 0.98;
+            p.vy += 0.02 * this.dpr;
+            const prog = stateElapsed / this.disperseDuration;
+            p.opacity = Math.max(0, 1 - prog);
+            if (prog >= 1) {
+              this.state = 'returning';
+              this.stateStart = currentTime;
+              p.x = p.tx + (Math.random() - 0.5) * W * 0.35;
+              p.y = p.ty + (Math.random() - 0.5) * H * 0.55;
+            }
+          } else if (this.state === 'returning') {
+            const prog = Math.min(1, stateElapsed / this.returnDuration);
+            p.x += (p.tx - p.x) * 0.08 + (Math.random() - 0.5) * 0.6;
+            p.y += (p.ty - p.y) * 0.08 + (Math.random() - 0.5) * 0.6;
+            p.opacity = prog;
+            if (prog >= 1) this.state = 'stable';
+          }
+          if (p.opacity > 0.01) {
+            ctx.globalAlpha = p.opacity;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+          }
+        }
+        ctx.globalAlpha = 1;
+      }
     }
 
-    const __revealEl = document.getElementById('reveal-text');
-    const __revealController = {
-      el: __revealEl,
+    let __stippleInstance = null;
+    const __stippleController = {
       state: 'shimmering',
-      assemble() {
-        if (!this.el) return;
-        splitTextIntoChars(this.el);
-        // Force reflow then add class to trigger animations
-        void this.el.offsetWidth;
-        this.el.classList.add('revealed');
-      }
+      assemble() { if (__stippleInstance) __stippleInstance.start(); }
     };
 
-    // Init reveal sur Manodrey — déclenché à la fin de la vidéo
+    // Init StippleText sur Manodrey — déclenché quand l'étoile apparaît dans la vidéo
     window.addEventListener('load', () => {
-      const container = document.getElementById('reveal-title');
+      const container = document.getElementById('stipple-title');
       if (!container) return;
       const ready = document.fonts && document.fonts.load
         ? document.fonts.load('400 170px "DM Serif Display"')
         : Promise.resolve();
       ready.then(() => {
-        // Shim pour skipHeroIntro : déclenche le reveal
-        __heroSkipMagic = __revealController;
-        // Le reveal se déclenche via l'event "ended" de la vidéo (voir plus bas) — pas de timeout
+        // Crée l'instance Stipple (canvas + particules) — démarrera via le timeupdate vidéo
+        __stippleInstance = new StippleText(container, {
+          text: 'Manodrey',
+          fontFamily: '"DM Serif Display", serif',
+          fontWeight: 400,
+          color: '#ffffff',
+          density: 0.6,
+          dotSize: 1.5,
+          sampleRate: 2,
+          disperseInterval: 7500,
+          disperseDuration: 1400,
+          returnDuration: 1400
+        });
+        // Shim pour skipHeroIntro : déclenche le stipple
+        __heroSkipMagic = __stippleController;
 
 
 
