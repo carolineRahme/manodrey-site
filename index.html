@@ -481,16 +481,39 @@
       opacity: 0;
       animation: fadeIn 0.6s 999s forwards;
     }
-    .stipple-container {
+    .slit-container {
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    .stipple-container canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
+    .slit-text {
+      margin: 0;
+      font-family: 'DM Serif Display', serif;
+      font-weight: 400;
+      font-size: clamp(80px, 13vw, 200px);
+      line-height: 0.95;
+      color: #ffffff;
+      letter-spacing: 0.005em;
+      text-shadow: 0 4px 30px rgba(0, 0, 0, 0.45);
+      display: inline-flex;
+      white-space: nowrap;
+    }
+    .slit-letter {
+      display: inline-block;
+      clip-path: inset(48% 0 48% 0);
+      -webkit-clip-path: inset(48% 0 48% 0);
+      opacity: 0;
+      transform: translateY(0);
+      transition: clip-path 1.15s cubic-bezier(0.7, 0, 0.2, 1),
+                  -webkit-clip-path 1.15s cubic-bezier(0.7, 0, 0.2, 1),
+                  opacity 0.7s ease-out;
+      will-change: clip-path, opacity;
+    }
+    .slit-text.revealed .slit-letter {
+      clip-path: inset(-8% 0 -8% 0);
+      -webkit-clip-path: inset(-8% 0 -8% 0);
+      opacity: 1;
     }
     .hero-title canvas {
       position: absolute;
@@ -1268,8 +1291,8 @@
     </video>
     <div class="hero-video-overlay" aria-hidden="true"></div>
     <div class="hero-content">
-      <div class="hero-title stipple-container" id="stipple-title">
-        <h1 class="visually-hidden">Manodrey</h1>
+      <div class="hero-title slit-container" id="slit-title">
+        <h1 class="slit-text" aria-label="Manodrey"><span class="slit-letter" aria-hidden="true">M</span><span class="slit-letter" aria-hidden="true">a</span><span class="slit-letter" aria-hidden="true">n</span><span class="slit-letter" aria-hidden="true">o</span><span class="slit-letter" aria-hidden="true">d</span><span class="slit-letter" aria-hidden="true">r</span><span class="slit-letter" aria-hidden="true">e</span><span class="slit-letter" aria-hidden="true">y</span></h1>
       </div>
       <div class="hero-tagline" id="particles-tagline">
         <span class="hero-tagline-text">Là où l'imaginaire prend vie.</span>
@@ -2596,163 +2619,31 @@
       if (typeof __heroSkipParticles === 'function') __heroSkipParticles();
     }
 
-    // ============ STIPPLE TEXT (Manodrey en points blancs) ============
-    class StippleText {
-      constructor(container, opts) {
-        this.container = container;
-        this.text = opts.text || '';
-        this.fontFamily = opts.fontFamily || 'sans-serif';
-        this.fontWeight = opts.fontWeight || 700;
-        this.color = opts.color || '#ffffff';
-        this.density = opts.density != null ? opts.density : 0.55;
-        this.dotSize = opts.dotSize != null ? opts.dotSize : 1.4;
-        this.sampleRate = opts.sampleRate || 2;
-        this.disperseInterval = opts.disperseInterval || 7500;
-        this.disperseDuration = opts.disperseDuration || 1400;
-        this.returnDuration = opts.returnDuration || 1400;
-        this.dpr = Math.min(window.devicePixelRatio || 1, 2);
-        this.canvas = document.createElement('canvas');
-        this.canvas.style.cssText = 'display:block;pointer-events:none;';
-        this.ctx = this.canvas.getContext('2d');
-        container.appendChild(this.canvas);
-        this.particles = [];
-        this.state = 'idle';
-        this.stateStart = 0;
-        this.running = false;
-        window.addEventListener('resize', () => this.resize());
-        this.resize();
-      }
-      resize() {
-        const rect = this.container.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) return;
-        this.canvas.width = Math.floor(rect.width * this.dpr);
-        this.canvas.height = Math.floor(rect.height * this.dpr);
-        this.canvas.style.width = rect.width + 'px';
-        this.canvas.style.height = rect.height + 'px';
-        this.fontSize = Math.min(rect.height * 0.85, Math.max(60, rect.width * 0.13));
-        if (this.running) this.sampleText();
-      }
-      sampleText() {
-        const ctx = this.ctx, W = this.canvas.width, H = this.canvas.height;
-        const fs = this.fontSize * this.dpr;
-        ctx.clearRect(0, 0, W, H);
-        ctx.fillStyle = '#fff';
-        ctx.font = this.fontWeight + ' ' + fs + 'px ' + this.fontFamily;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(this.text, W / 2, H / 2);
-        const data = ctx.getImageData(0, 0, W, H).data;
-        this.particles = [];
-        for (let y = 0; y < H; y += this.sampleRate) {
-          for (let x = 0; x < W; x += this.sampleRate) {
-            if (data[(y * W + x) * 4 + 3] > 128 && Math.random() < this.density) {
-              this.particles.push({
-                x: x + (Math.random() - 0.5) * 2,
-                y: y + (Math.random() - 0.5) * 2,
-                tx: x, ty: y, vx: 0, vy: 0,
-                size: this.dotSize * (0.5 + Math.random() * 1.2) * this.dpr,
-                opacity: 0
-              });
-            }
-          }
-        }
-        ctx.clearRect(0, 0, W, H);
-      }
-      disperse() {
-        if (this.state !== 'stable') return;
-        this.state = 'dispersing';
-        this.stateStart = performance.now();
-        for (let i = 0; i < this.particles.length; i++) {
-          const p = this.particles[i];
-          p.vx = (6 + Math.random() * 14) * this.dpr;
-          p.vy = (Math.random() - 0.5) * 4 * this.dpr;
-        }
-      }
-      start() {
-        if (this.running) return;
-        this.running = true;
-        this.sampleText();
-        this.state = 'appearing';
-        this.stateStart = performance.now();
-        requestAnimationFrame((t) => this.animate(t));
-        this._disperseTimer = setInterval(() => this.disperse(), this.disperseInterval);
-      }
-      animate(currentTime) {
-        if (!this.running) return;
-        requestAnimationFrame((t) => this.animate(t));
-        const ctx = this.ctx, W = this.canvas.width, H = this.canvas.height;
-        ctx.clearRect(0, 0, W, H);
-        ctx.fillStyle = this.color;
-        const stateElapsed = currentTime - this.stateStart;
-        for (let i = 0; i < this.particles.length; i++) {
-          const p = this.particles[i];
-          if (this.state === 'appearing') {
-            const prog = Math.min(1, stateElapsed / 1400);
-            p.opacity = prog;
-            p.x += (p.tx - p.x) * 0.12 + (Math.random() - 0.5) * 0.4;
-            p.y += (p.ty - p.y) * 0.12 + (Math.random() - 0.5) * 0.4;
-            if (prog >= 1) this.state = 'stable';
-          } else if (this.state === 'stable') {
-            p.opacity = 0.85 + Math.random() * 0.15;
-            p.x = p.tx + (Math.random() - 0.5) * 1.2;
-            p.y = p.ty + (Math.random() - 0.5) * 1.2;
-          } else if (this.state === 'dispersing') {
-            p.x += p.vx * 0.5; p.y += p.vy * 0.5;
-            p.vx *= 0.98; p.vy *= 0.98;
-            p.vy += 0.02 * this.dpr;
-            const prog = stateElapsed / this.disperseDuration;
-            p.opacity = Math.max(0, 1 - prog);
-            if (prog >= 1) {
-              this.state = 'returning';
-              this.stateStart = currentTime;
-              p.x = p.tx + (Math.random() - 0.5) * W * 0.35;
-              p.y = p.ty + (Math.random() - 0.5) * H * 0.55;
-            }
-          } else if (this.state === 'returning') {
-            const prog = Math.min(1, stateElapsed / this.returnDuration);
-            p.x += (p.tx - p.x) * 0.08 + (Math.random() - 0.5) * 0.6;
-            p.y += (p.ty - p.y) * 0.08 + (Math.random() - 0.5) * 0.6;
-            p.opacity = prog;
-            if (prog >= 1) this.state = 'stable';
-          }
-          if (p.opacity > 0.01) {
-            ctx.globalAlpha = p.opacity;
-            ctx.fillRect(p.x, p.y, p.size, p.size);
-          }
-        }
-        ctx.globalAlpha = 1;
-      }
-    }
-
-    let __stippleInstance = null;
-    const __stippleController = {
+    // ============ SLIT REVEAL (Manodrey horizontal slit per letter) ============
+    const __slitController = {
       state: 'shimmering',
-      assemble() { if (__stippleInstance) __stippleInstance.start(); }
+      assemble() {
+        const text = document.querySelector('#slit-title .slit-text');
+        if (!text) return;
+        const letters = text.querySelectorAll('.slit-letter');
+        letters.forEach((el, i) => {
+          el.style.transitionDelay = (i * 0.085) + 's';
+        });
+        void text.offsetWidth;
+        text.classList.add('revealed');
+      }
     };
 
-    // Init StippleText sur Manodrey — déclenché quand l'étoile apparaît dans la vidéo
+    // Init SlitReveal sur Manodrey — déclenché quand l'étoile apparaît dans la vidéo
     window.addEventListener('load', () => {
-      const container = document.getElementById('stipple-title');
+      const container = document.getElementById('slit-title');
       if (!container) return;
       const ready = document.fonts && document.fonts.load
         ? document.fonts.load('400 170px "DM Serif Display"')
         : Promise.resolve();
       ready.then(() => {
-        // Crée l'instance Stipple (canvas + particules) — démarrera via le timeupdate vidéo
-        __stippleInstance = new StippleText(container, {
-          text: 'Manodrey',
-          fontFamily: '"DM Serif Display", serif',
-          fontWeight: 400,
-          color: '#ffffff',
-          density: 0.6,
-          dotSize: 1.5,
-          sampleRate: 2,
-          disperseInterval: 7500,
-          disperseDuration: 1400,
-          returnDuration: 1400
-        });
-        // Shim pour skipHeroIntro : déclenche le stipple
-        __heroSkipMagic = __stippleController;
+        // Shim pour skipHeroIntro : déclenche le slit reveal
+        __heroSkipMagic = __slitController;
 
 
 
