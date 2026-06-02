@@ -239,11 +239,15 @@
     .hero {
       position: relative;
       min-height: 100vh;
-      overflow: hidden;
+      overflow: visible;
       background: transparent;
       display: flex;
       align-items: flex-end;
       padding: 100px 48px 60px;
+    }
+    .hero-video {
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 65%, rgba(0,0,0,0.4) 85%, rgba(0,0,0,0) 100%);
+              mask-image: linear-gradient(to bottom, #000 0%, #000 65%, rgba(0,0,0,0.4) 85%, rgba(0,0,0,0) 100%);
     }
     .hero-video {
       position: absolute;
@@ -265,31 +269,9 @@
         linear-gradient(180deg,
           rgba(2, 6, 26, 0.35) 0%,
           rgba(0, 0, 0, 0) 25%,
-          rgba(0, 0, 0, 0) 45%,
-          rgba(0, 0, 0, 0.35) 65%,
-          rgba(0, 0, 0, 0.75) 82%,
-          rgba(0, 0, 0, 0.96) 94%,
-          #000000 100%);
-    }
-    /* Stars that bleed onto the bottom of the hero video — fades in toward the bottom */
-    .hero-star-bleed {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 55%;
-      z-index: 3;
-      pointer-events: none;
-      overflow: hidden;
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.15) 25%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.9) 80%, #000 100%);
-              mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.15) 25%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.9) 80%, #000 100%);
-    }
-    .hero-star-bleed::before,
-    .hero-star-bleed::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-repeat: repeat;
+          rgba(0, 0, 0, 0) 55%,
+          rgba(0, 0, 0, 0.2) 75%,
+          rgba(0, 0, 0, 0) 100%);
     }
     .hero-bg {
       position: absolute;
@@ -1315,7 +1297,6 @@
       <source src="assets/hero-bg.mp4" type="video/mp4">
     </video>
     <div class="hero-video-overlay" aria-hidden="true"></div>
-    <div class="hero-star-bleed" aria-hidden="true"></div>
     <div class="hero-content">
       <div class="hero-title slit-container" id="slit-title">
         <h1 class="slit-text" aria-label="Manodrey"><span class="slit-letter" aria-hidden="true">M</span><span class="slit-letter" aria-hidden="true">a</span><span class="slit-letter" aria-hidden="true">n</span><span class="slit-letter" aria-hidden="true">o</span><span class="slit-letter" aria-hidden="true">d</span><span class="slit-letter" aria-hidden="true">r</span><span class="slit-letter" aria-hidden="true">e</span><span class="slit-letter" aria-hidden="true">y</span></h1>
@@ -1582,14 +1563,6 @@
       createStarLayer(wrap, { count: 200,  size: 3, color: '#FFE9C4',                    duration: 150 });
     })();
 
-    // Stars that bleed onto the bottom of the hero video for a seamless sky transition
-    (function initHeroStarBleed() {
-      const wrap = document.querySelector('.hero-star-bleed');
-      if (!wrap) return;
-      createStarLayer(wrap, { count: 350, size: 1, color: 'rgba(255, 255, 255, 0.75)', duration: 65 });
-      createStarLayer(wrap, { count: 140, size: 2, color: '#FFFFFF',                   duration: 120 });
-      createStarLayer(wrap, { count: 60,  size: 3, color: '#FFE9C4',                   duration: 180 });
-    })();
 
     // Mouse parallax (subtle, eased)
     (function initMouseParallax() {
