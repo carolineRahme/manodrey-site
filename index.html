@@ -2736,12 +2736,12 @@
         // Particules sur tagline/sub/CTAs/nav → déclenchées par l'event "ended" de la vidéo
         __heroSkipParticles = initParticles;
 
-        // Déclenche le reveal au moment où l'étoile apparaît dans la vidéo (≈ 6s)
-        // pour que Manodrey soit fully revealed quand l'étoile est en pleine apothéose à 8s.
+        // Déclenche le reveal au moment où l'étoile est bien visible dans la vidéo (≈ 1.5s)
+        // pour que Manodrey soit fully revealed avant les plans rapprochés.
         const videoEl = document.querySelector('.hero-video');
         if (videoEl) {
           const onTimeUpdate = () => {
-            if (videoEl.currentTime >= 6.0 && !__heroRevealed) {
+            if (videoEl.currentTime >= 1.5 && !__heroRevealed) {
               skipHeroIntro();
             }
           };
