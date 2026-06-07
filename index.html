@@ -533,34 +533,61 @@
     .hero-tagline {
       position: relative;
       width: 100%;
-      max-width: 760px;
-      height: clamp(46px, 6vw, 70px);
+      max-width: 900px;
+      min-height: clamp(60px, 8vw, 110px);
       margin: 0 auto 16px;
-      opacity: 0;
-      animation: fadeIn 1s 999s forwards;
+      padding: 0.1em 0.05em 0.25em;
+      opacity: 1;
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: visible;
     }
-    .hero-tagline canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      display: block;
-      z-index: 0;
-      pointer-events: none;
-    }
+    .hero-tagline canvas { display: none; }
     .hero-tagline-text {
       position: relative;
       z-index: 1;
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
+      font-family: 'Allura', cursive;
+      font-style: normal;
       font-weight: 400;
-      font-size: clamp(22px, 2.4vw, 32px);
-      color: var(--gold-light);
-      letter-spacing: 0.01em;
-      text-shadow: 0 2px 16px rgba(0, 0, 0, 0.65);
+      font-size: clamp(36px, 5vw, 76px);
+      line-height: 1.2;
+      color: #ffffff;
+      letter-spacing: 0;
+      text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55), 0 0 28px rgba(255, 233, 196, 0.18);
+      /* Disney-style hand-written reveal: text is hidden until the .written class is added */
+      clip-path: inset(0 100% 0 0);
+      -webkit-clip-path: inset(0 100% 0 0);
+      transition: clip-path 2.6s cubic-bezier(0.45, 0.02, 0.32, 1),
+                  -webkit-clip-path 2.6s cubic-bezier(0.45, 0.02, 0.32, 1);
+    }
+    .hero-tagline-text.written {
+      clip-path: inset(-15% -8% -25% 0);
+      -webkit-clip-path: inset(-15% -8% -25% 0);
+    }
+    /* Sparkle that travels along with the reveal — the magic Disney quill point */
+    .hero-tagline .sparkle {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      background: radial-gradient(circle, #FFE9C4 0%, rgba(255, 233, 196, 0.7) 40%, transparent 70%);
+      box-shadow: 0 0 18px 6px rgba(255, 233, 196, 0.8),
+                  0 0 38px 12px rgba(212, 175, 122, 0.4);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 2;
+      transition: left 2.6s cubic-bezier(0.45, 0.02, 0.32, 1),
+                  opacity 0.4s ease-out,
+                  transform 0.4s ease-out;
+    }
+    .hero-tagline.written-active .sparkle {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      left: 100%;
     }
     @keyframes fadeIn {
       from { opacity: 0; }
@@ -1295,6 +1322,7 @@
       </div>
       <div class="hero-tagline" id="particles-tagline">
         <span class="hero-tagline-text">Là où l'imaginaire prend vie.</span>
+        <span class="sparkle" aria-hidden="true"></span>
       </div>
       <div class="hero-sub" id="particles-sub">
         <span class="hero-sub-text">Société de production <span class="sep">✦</span> Paris</span>
@@ -2738,17 +2766,36 @@
 
         // Déclenche le reveal au moment où l'étoile entre en apothéose (≈ 6s)
         // pour que Manodrey soit fully revealed pendant le rayonnement maximal à 8s.
+        // Puis déclenche l'animation "Disney-écriture" de la tagline à 8.5s.
         const videoEl = document.querySelector('.hero-video');
+        let __taglineWritten = false;
+        function writeTagline() {
+          if (__taglineWritten) return;
+          __taglineWritten = true;
+          const taglineWrap = document.getElementById('particles-tagline');
+          const taglineText = taglineWrap && taglineWrap.querySelector('.hero-tagline-text');
+          if (!taglineText || !taglineWrap) return;
+          // Force reflow so the transition runs from the initial clipped state
+          void taglineText.offsetWidth;
+          taglineText.classList.add('written');
+          taglineWrap.classList.add('written-active');
+          // Fade out the sparkle quill after the writing finishes
+          setTimeout(() => taglineWrap.classList.remove('written-active'), 2700);
+        }
         if (videoEl) {
           const onTimeUpdate = () => {
             if (videoEl.currentTime >= 6.0 && !__heroRevealed) {
               skipHeroIntro();
+            }
+            if (videoEl.currentTime >= 8.5 && !__taglineWritten) {
+              writeTagline();
             }
           };
           videoEl.addEventListener('timeupdate', onTimeUpdate);
           // Backup : si timeupdate ne fire pas (très rare), on déclenche à la fin
           videoEl.addEventListener('ended', () => {
             skipHeroIntro();
+            writeTagline();
             videoEl.pause();
           });
         }
