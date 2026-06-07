@@ -826,9 +826,19 @@
       border-radius: 0;
       box-shadow: none;
       text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
-      transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 1.4s cubic-bezier(0.45, 0.02, 0.32, 1),
+                  opacity 1.4s cubic-bezier(0.45, 0.02, 0.32, 1),
+                  filter 1.4s cubic-bezier(0.45, 0.02, 0.32, 1);
       cursor: pointer;
+      opacity: 0;
+      transform: translateY(14px);
+      filter: blur(4px);
+    }
+    body.hero-skipped .fab {
       opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
     }
     @keyframes fabFadeIn {
       from { opacity: 0; }
@@ -1345,7 +1355,7 @@
 
   <!-- ============ HERO ============ -->
   <section class="hero">
-    <video class="hero-video" autoplay muted playsinline preload="auto" aria-hidden="true">
+    <video class="hero-video" autoplay muted playsinline preload="auto" poster="assets/hero-poster.jpg" aria-hidden="true">
       <source src="assets/hero-bg.mp4" type="video/mp4">
     </video>
     <div class="hero-video-overlay" aria-hidden="true"></div>
