@@ -506,9 +506,10 @@
     }
     .slit-letter {
       display: inline-block;
-      opacity: 0;
+      opacity: 1;
       transition: opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1);
     }
+    /* legacy hook — kept so JS adding .revealed remains a no-op */
     .slit-text.revealed .slit-letter {
       opacity: 1;
     }
