@@ -1355,7 +1355,7 @@
 
   <!-- ============ HERO ============ -->
   <section class="hero">
-    <video class="hero-video" autoplay muted playsinline preload="auto" poster="assets/hero-poster.jpg" aria-hidden="true">
+    <video class="hero-video" autoplay muted playsinline loop preload="auto" poster="assets/hero-poster.jpg" aria-hidden="true">
       <source src="assets/hero-bg.mp4" type="video/mp4">
     </video>
     <div class="hero-video-overlay" aria-hidden="true"></div>
@@ -2843,11 +2843,12 @@
             }
           };
           videoEl.addEventListener('timeupdate', onTimeUpdate);
+          // Safety net : si la vidéo termine sans que timeupdate ait fire les triggers
           videoEl.addEventListener('ended', () => {
             skipHeroIntro();
             writeTagline();
             revealStory();
-            videoEl.pause();
+            // (pas de pause — l'attribut "loop" relance le film automatiquement)
           });
         }
 
