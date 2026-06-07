@@ -703,11 +703,15 @@
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
+    }
+    /* Only the HERO hero-actions starts hidden; the same class inside La Salle
+       is revealed via its parent .reveal-stagger on scroll. */
+    .hero .hero-actions {
       opacity: 0;
       transform: translateY(12px);
       transition: opacity 1.2s ease-out, transform 1.2s ease-out;
     }
-    body.story-revealed .hero-actions { opacity: 1; transform: translateY(0); }
+    body.story-revealed .hero .hero-actions { opacity: 1; transform: translateY(0); }
     .cta {
       display: inline-flex;
       align-items: center;
@@ -1389,7 +1393,7 @@
 
   <!-- ============ FEATURED — LA SALLE ============ -->
   <section class="featured" id="la-salle">
-    <div class="featured-content">
+    <div class="featured-content reveal-stagger">
       <div class="featured-tag">Production phare · 2026</div>
       <h2 class="featured-title">La Salle</h2>
       <div class="featured-meta">
