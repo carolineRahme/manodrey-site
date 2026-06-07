@@ -2868,10 +2868,15 @@
       });
     });
 
-    // Reveal on scroll
+    // Reveal on scroll — replays both ways: animates IN when an element
+    // enters the viewport and animates back OUT when it leaves.
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(e => {
-        if (e.isIntersecting) e.target.classList.add('visible');
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+        } else {
+          e.target.classList.remove('visible');
+        }
       });
     }, { threshold: 0.15 });
     document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => observer.observe(el));
