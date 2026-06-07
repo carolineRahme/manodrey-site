@@ -153,7 +153,7 @@
       position: fixed;
       top: 22px;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translateX(-50%) translateY(-10px);
       z-index: 100;
       width: calc(100% - 48px);
       max-width: 1400px;
@@ -165,8 +165,14 @@
       border: none;
       border-radius: 0;
       box-shadow: none;
-      transition: padding 0.35s ease, top 0.35s ease;
+      opacity: 0;
+      transition: padding 0.35s ease, top 0.35s ease,
+                  opacity 1.4s cubic-bezier(0.45, 0.02, 0.32, 1),
+                  transform 1.4s cubic-bezier(0.45, 0.02, 0.32, 1);
+    }
+    body.story-revealed header {
       opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
     @keyframes uiFadeIn {
       from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
@@ -174,7 +180,6 @@
     }
 
     /* Skip hero intro on click → tout est instantanément visible */
-    body.hero-skipped header,
     body.hero-skipped .hero-title,
     body.hero-skipped .hero-tagline {
       animation: none !important;
