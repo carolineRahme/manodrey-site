@@ -2856,13 +2856,16 @@
           });
         }
 
-        // Click sur la zone vidéo du hero → skip tout l'intro
+        // Click sur la zone vidéo du hero → skip tout l'intro : Manodrey,
+        // tagline et le reste apparaissent immédiatement et restent visibles.
         const heroEl = document.querySelector('.hero');
         if (heroEl) {
           heroEl.addEventListener('click', (e) => {
             // Laisser les vrais liens/boutons fonctionner normalement
             if (e.target.closest('a, button')) return;
             skipHeroIntro();
+            writeTagline();
+            revealStory();
           });
         }
       });
