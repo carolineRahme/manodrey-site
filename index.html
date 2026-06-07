@@ -242,8 +242,8 @@
       overflow: visible;
       background: transparent;
       display: flex;
-      align-items: flex-end;
-      padding: 100px 48px 60px;
+      align-items: center;
+      padding: 110px 48px 80px;
     }
     .hero-video {
       -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 65%, rgba(0,0,0,0.4) 85%, rgba(0,0,0,0) 100%);
@@ -570,6 +570,19 @@
     .hero-tagline-text.written {
       clip-path: inset(-20% -10% -30% 0);
       -webkit-clip-path: inset(-20% -10% -30% 0);
+    }
+    .hero-tagline-text .tagline-star {
+      display: inline-block;
+      color: var(--gold);
+      font-style: normal;
+      font-size: 0.95em;
+      text-shadow: 0 0 12px rgba(255, 233, 196, 0.85),
+                   0 0 22px rgba(212, 175, 122, 0.6);
+      animation: tagline-star-twinkle 2.6s ease-in-out infinite;
+    }
+    @keyframes tagline-star-twinkle {
+      0%, 100% { opacity: 0.85; transform: scale(1); filter: drop-shadow(0 0 4px rgba(255, 233, 196, 0.6)); }
+      50%      { opacity: 1;    transform: scale(1.18); filter: drop-shadow(0 0 12px rgba(255, 233, 196, 0.95)); }
     }
     /* Sparkle that travels along with the reveal — the magic Disney quill point */
     .hero-tagline .sparkle {
@@ -1327,7 +1340,7 @@
         <h1 class="slit-text" aria-label="Manodrey"><span class="slit-letter" aria-hidden="true">M</span><span class="slit-letter" aria-hidden="true">a</span><span class="slit-letter" aria-hidden="true">n</span><span class="slit-letter" aria-hidden="true">o</span><span class="slit-letter" aria-hidden="true">d</span><span class="slit-letter" aria-hidden="true">r</span><span class="slit-letter" aria-hidden="true">e</span><span class="slit-letter" aria-hidden="true">y</span></h1>
       </div>
       <div class="hero-tagline" id="particles-tagline">
-        <span class="hero-tagline-text">Là où l'imaginaire prend vie.</span>
+        <span class="hero-tagline-text">Là où l'imaginaire prend vie<span class="tagline-star" aria-hidden="true"> ✦</span></span>
         <span class="sparkle" aria-hidden="true"></span>
       </div>
       <div class="hero-sub" id="particles-sub">
