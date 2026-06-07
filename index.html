@@ -175,17 +175,12 @@
 
     /* Skip hero intro on click → tout est instantanément visible */
     body.hero-skipped header,
-    body.hero-skipped .fab,
     body.hero-skipped .hero-title,
-    body.hero-skipped .hero-tagline,
-    body.hero-skipped .hero-sub,
-    body.hero-skipped .hero-actions {
+    body.hero-skipped .hero-tagline {
       animation: none !important;
       opacity: 1 !important;
     }
-    body.hero-skipped .hero-actions,
-    body.hero-skipped .hero-sub,
-    body.hero-skipped .hero-tagline {
+    body.story-revealed .hero-tagline {
       transform: none !important;
     }
     body.hero-skipped .hero { cursor: default; }
@@ -650,7 +645,7 @@
       align-items: center;
       justify-content: center;
     }
-    body.hero-skipped .hero-sub { opacity: 1; }
+    body.story-revealed .hero-sub { opacity: 1; }
     .hero-sub canvas {
       position: absolute; inset: 0; width: 100%; height: 100%; display: block;
       z-index: 0; pointer-events: none;
@@ -707,7 +702,7 @@
       transform: translateY(12px);
       transition: opacity 1.2s ease-out, transform 1.2s ease-out;
     }
-    body.hero-skipped .hero-actions { opacity: 1; transform: translateY(0); }
+    body.story-revealed .hero-actions { opacity: 1; transform: translateY(0); }
     .cta {
       display: inline-flex;
       align-items: center;
@@ -835,7 +830,7 @@
       transform: translateY(14px);
       filter: blur(4px);
     }
-    body.hero-skipped .fab {
+    body.story-revealed .fab {
       opacity: 1;
       transform: translateY(0);
       filter: blur(0);
@@ -2807,10 +2802,13 @@
         // Particules sur tagline/sub/CTAs/nav → déclenchées par l'event "ended" de la vidéo
         __heroSkipParticles = initParticles;
 
-        // Tout apparaît à la fin du film : Manodrey s'écrit en cursive,
-        // puis la tagline s'écrit en cursive, puis le sous-titre + CTAs fade in.
+        // Séquence à la fin du film :
+        // 7s  : Manodrey s'écrit en cursive (3s)
+        // 8.5s : tagline "Là où l'imaginaire prend vie" s'écrit
+        // 9.8s (ou ended) : sub + CTAs + FABs apparaissent (story-revealed)
         const videoEl = document.querySelector('.hero-video');
         let __taglineWritten = false;
+        let __storyRevealed = false;
         function writeTagline() {
           if (__taglineWritten) return;
           __taglineWritten = true;
@@ -2822,22 +2820,28 @@
           taglineWrap.classList.add('written-active');
           setTimeout(() => taglineWrap.classList.remove('written-active'), 2700);
         }
+        function revealStory() {
+          if (__storyRevealed) return;
+          __storyRevealed = true;
+          document.body.classList.add('story-revealed');
+        }
         if (videoEl) {
           const onTimeUpdate = () => {
-            // Manodrey s'écrit à 7s (3s d'écriture pour finir vers 10s, à la fin du film)
             if (videoEl.currentTime >= 7.0 && !__heroRevealed) {
               skipHeroIntro();
             }
-            // La tagline s'écrit juste après Manodrey, à 8.5s
             if (videoEl.currentTime >= 8.5 && !__taglineWritten) {
               writeTagline();
             }
+            if (videoEl.currentTime >= 9.8 && !__storyRevealed) {
+              revealStory();
+            }
           };
           videoEl.addEventListener('timeupdate', onTimeUpdate);
-          // Si la vidéo finit avant que timeupdate ait tout déclenché
           videoEl.addEventListener('ended', () => {
             skipHeroIntro();
             writeTagline();
+            revealStory();
             videoEl.pause();
           });
         }
