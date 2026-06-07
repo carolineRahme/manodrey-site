@@ -533,28 +533,34 @@
     .hero-tagline {
       position: relative;
       width: 100%;
-      max-width: 900px;
-      min-height: clamp(60px, 8vw, 110px);
+      max-width: 760px;
+      height: clamp(46px, 6vw, 70px);
       margin: 0 auto 16px;
-      padding: 0.1em 0.05em 0.25em;
       opacity: 1;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: visible;
     }
-    .hero-tagline canvas { display: none; }
+    .hero-tagline canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+      pointer-events: none;
+    }
     .hero-tagline-text {
       position: relative;
       z-index: 1;
-      font-family: 'Allura', cursive;
-      font-style: normal;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
       font-weight: 400;
-      font-size: clamp(36px, 5vw, 76px);
-      line-height: 1.2;
-      color: #ffffff;
-      letter-spacing: 0;
-      text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55), 0 0 28px rgba(255, 233, 196, 0.18);
+      font-size: clamp(22px, 2.4vw, 32px);
+      color: var(--gold-light);
+      letter-spacing: 0.01em;
+      text-shadow: 0 2px 16px rgba(0, 0, 0, 0.65);
       /* Disney-style hand-written reveal: text is hidden until the .written class is added */
       clip-path: inset(0 100% 0 0);
       -webkit-clip-path: inset(0 100% 0 0);
@@ -562,8 +568,8 @@
                   -webkit-clip-path 2.6s cubic-bezier(0.45, 0.02, 0.32, 1);
     }
     .hero-tagline-text.written {
-      clip-path: inset(-15% -8% -25% 0);
-      -webkit-clip-path: inset(-15% -8% -25% 0);
+      clip-path: inset(-20% -10% -30% 0);
+      -webkit-clip-path: inset(-20% -10% -30% 0);
     }
     /* Sparkle that travels along with the reveal — the magic Disney quill point */
     .hero-tagline .sparkle {
