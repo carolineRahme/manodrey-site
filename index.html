@@ -501,16 +501,20 @@
       color: #ffffff;
       letter-spacing: -0.01em;
       text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), 0 2px 10px rgba(0, 0, 0, 0.4);
-      display: inline-flex;
+      display: inline-block;
       white-space: nowrap;
+      /* Disney-style hand-written reveal (same as tagline) */
+      clip-path: inset(0 100% 0 0);
+      -webkit-clip-path: inset(0 100% 0 0);
+      transition: clip-path 3s cubic-bezier(0.45, 0.02, 0.32, 1),
+                  -webkit-clip-path 3s cubic-bezier(0.45, 0.02, 0.32, 1);
+    }
+    .slit-text.revealed {
+      clip-path: inset(-15% -8% -25% 0);
+      -webkit-clip-path: inset(-15% -8% -25% 0);
     }
     .slit-letter {
       display: inline-block;
-      opacity: 1;
-      transition: opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-    /* legacy hook — kept so JS adding .revealed remains a no-op */
-    .slit-text.revealed .slit-letter {
       opacity: 1;
     }
     .hero-title canvas {
@@ -640,11 +644,13 @@
       max-width: 520px;
       height: 32px;
       margin: 0 auto 48px;
-      opacity: 1;
+      opacity: 0;
+      transition: opacity 1.2s ease-out;
       display: flex;
       align-items: center;
       justify-content: center;
     }
+    body.hero-skipped .hero-sub { opacity: 1; }
     .hero-sub canvas {
       position: absolute; inset: 0; width: 100%; height: 100%; display: block;
       z-index: 0; pointer-events: none;
@@ -697,7 +703,11 @@
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 1.2s ease-out, transform 1.2s ease-out;
     }
+    body.hero-skipped .hero-actions { opacity: 1; transform: translateY(0); }
     .cta {
       display: inline-flex;
       align-items: center;
@@ -2787,9 +2797,8 @@
         // Particules sur tagline/sub/CTAs/nav → déclenchées par l'event "ended" de la vidéo
         __heroSkipParticles = initParticles;
 
-        // Déclenche le reveal au moment où l'étoile entre en apothéose (≈ 6s)
-        // pour que Manodrey soit fully revealed pendant le rayonnement maximal à 8s.
-        // Puis déclenche l'animation "Disney-écriture" de la tagline à 8.5s.
+        // Tout apparaît à la fin du film : Manodrey s'écrit en cursive,
+        // puis la tagline s'écrit en cursive, puis le sous-titre + CTAs fade in.
         const videoEl = document.querySelector('.hero-video');
         let __taglineWritten = false;
         function writeTagline() {
@@ -2798,24 +2807,24 @@
           const taglineWrap = document.getElementById('particles-tagline');
           const taglineText = taglineWrap && taglineWrap.querySelector('.hero-tagline-text');
           if (!taglineText || !taglineWrap) return;
-          // Force reflow so the transition runs from the initial clipped state
           void taglineText.offsetWidth;
           taglineText.classList.add('written');
           taglineWrap.classList.add('written-active');
-          // Fade out the sparkle quill after the writing finishes
           setTimeout(() => taglineWrap.classList.remove('written-active'), 2700);
         }
         if (videoEl) {
           const onTimeUpdate = () => {
-            if (videoEl.currentTime >= 6.0 && !__heroRevealed) {
+            // Manodrey s'écrit à 7s (3s d'écriture pour finir vers 10s, à la fin du film)
+            if (videoEl.currentTime >= 7.0 && !__heroRevealed) {
               skipHeroIntro();
             }
+            // La tagline s'écrit juste après Manodrey, à 8.5s
             if (videoEl.currentTime >= 8.5 && !__taglineWritten) {
               writeTagline();
             }
           };
           videoEl.addEventListener('timeupdate', onTimeUpdate);
-          // Backup : si timeupdate ne fire pas (très rare), on déclenche à la fin
+          // Si la vidéo finit avant que timeupdate ait tout déclenché
           videoEl.addEventListener('ended', () => {
             skipHeroIntro();
             writeTagline();
