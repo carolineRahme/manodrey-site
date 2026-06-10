@@ -985,18 +985,17 @@
       margin-bottom: 48px;
       line-height: 1.5;
     }
-    /* Panneau chiffres-clés — apparaît en fondu au survol de "Synopsis complet" */
+    /* Panneau chiffres-clés — apparaît en fondu au survol de "Synopsis complet",
+       ancré dans la rangée des CTAs, ~2cm à droite du bouton */
     .featured-synopsis {
-      position: absolute;
-      right: clamp(24px, 7vw, 120px);
-      top: 50%;
-      transform: translateY(-50%) translateX(24px);
-      z-index: 3;
+      align-self: center;
+      margin-left: 40px;
+      transform: translateX(24px);
       max-width: 420px;
       text-align: left;
       font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(20px, 1.9vw, 26px);
-      line-height: 1.7;
+      font-size: clamp(18px, 1.6vw, 23px);
+      line-height: 1.6;
       color: var(--text);
       opacity: 0;
       filter: blur(6px);
@@ -1005,7 +1004,7 @@
     }
     .featured-synopsis.visible {
       opacity: 1;
-      transform: translateY(-50%) translateX(0);
+      transform: translateX(0);
       filter: blur(0);
     }
     .featured-synopsis p { margin: 0 0 6px; }
@@ -1436,15 +1435,15 @@
       <div class="hero-actions">
         <a href="#" class="cta gold"><span class="play-icon"></span>Bande-annonce</a>
         <a href="#" class="cta outline" id="synopsis-cta">Synopsis complet</a>
+        <aside class="featured-synopsis" id="featured-synopsis" aria-hidden="true">
+          <p>En France</p>
+          <p>environ <strong>5 500</strong> salles de sport</p>
+          <p><strong>2 millions</strong> de Français sont abonnés</p>
+          <p><strong>59%</strong> y vont plusieurs fois par semaine</p>
+          <p class="synopsis-closing">voici leurs histoires</p>
+        </aside>
       </div>
     </div>
-    <aside class="featured-synopsis" id="featured-synopsis" aria-hidden="true">
-      <p>En France</p>
-      <p>environ <strong>5 500</strong> salles de sport</p>
-      <p><strong>2 millions</strong> de Français sont abonnés</p>
-      <p><strong>59%</strong> y vont plusieurs fois par semaine</p>
-      <p class="synopsis-closing">voici leurs histoires</p>
-    </aside>
   </section>
 
   <!-- ============ FOUNDER ============ -->
