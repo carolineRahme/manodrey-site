@@ -985,6 +985,43 @@
       margin-bottom: 48px;
       line-height: 1.5;
     }
+    /* Panneau chiffres-clés — apparaît en fondu au survol de "Synopsis complet" */
+    .featured-synopsis {
+      position: absolute;
+      right: clamp(24px, 7vw, 120px);
+      top: 50%;
+      transform: translateY(-50%) translateX(24px);
+      z-index: 3;
+      max-width: 420px;
+      text-align: left;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(20px, 1.9vw, 26px);
+      line-height: 1.7;
+      color: var(--text);
+      opacity: 0;
+      filter: blur(6px);
+      pointer-events: none;
+      transition: opacity 0.9s ease, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), filter 0.9s ease;
+    }
+    .featured-synopsis.visible {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+      filter: blur(0);
+    }
+    .featured-synopsis p { margin: 0 0 6px; }
+    .featured-synopsis strong {
+      color: var(--gold-light);
+      font-weight: 600;
+    }
+    .featured-synopsis .synopsis-closing {
+      margin-top: 18px;
+      font-style: italic;
+      color: var(--gold);
+      font-size: 1.15em;
+    }
+    @media (max-width: 1000px) {
+      .featured-synopsis { display: none; }
+    }
 
     /* ============ PRODUCTIONS GRID ============ */
     .productions { background: transparent; }
@@ -1398,9 +1435,16 @@
       <p class="featured-pitch">Une série qui se déroule dans une salle de sport et raconte avec humour les petits faits de société du quotidien.</p>
       <div class="hero-actions">
         <a href="#" class="cta gold"><span class="play-icon"></span>Bande-annonce</a>
-        <a href="#" class="cta outline">Synopsis complet</a>
+        <a href="#" class="cta outline" id="synopsis-cta">Synopsis complet</a>
       </div>
     </div>
+    <aside class="featured-synopsis" id="featured-synopsis" aria-hidden="true">
+      <p>En France</p>
+      <p>environ <strong>5 500</strong> salles de sport</p>
+      <p><strong>2 millions</strong> de Français sont abonnés</p>
+      <p><strong>59%</strong> y vont plusieurs fois par semaine</p>
+      <p class="synopsis-closing">voici leurs histoires</p>
+    </aside>
   </section>
 
   <!-- ============ FOUNDER ============ -->
@@ -2806,6 +2850,18 @@
       });
     }, { threshold: 0.15 });
     document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => observer.observe(el));
+
+    // Chiffres-clés La Salle — fondu au survol de "Synopsis complet"
+    (function initSynopsisHover() {
+      const cta = document.getElementById('synopsis-cta');
+      const panel = document.getElementById('featured-synopsis');
+      if (!cta || !panel) return;
+      cta.addEventListener('mouseenter', () => panel.classList.add('visible'));
+      cta.addEventListener('mouseleave', () => panel.classList.remove('visible'));
+      // Accessibilité clavier : focus = survol
+      cta.addEventListener('focus', () => panel.classList.add('visible'));
+      cta.addEventListener('blur', () => panel.classList.remove('visible'));
+    })();
   </script>
 </body>
 </html>
