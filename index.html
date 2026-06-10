@@ -1557,23 +1557,38 @@
         container.appendChild(star);
       }
     }
-    // ============ STARFIELD — 3-layer parallax (box-shadow trick) ============
+    // ============ STARFIELD — parallax multi-couches (box-shadow trick) ============
+    // x couvre 0..4600px pour remplir les très grands écrans bord à bord ;
+    // y couvre 0..2000px = la hauteur d'une couche, pour une boucle verticale propre.
     function generateStarShadows(count, color) {
       const shadows = [];
       for (let i = 0; i < count; i++) {
-        const x = Math.floor(Math.random() * 4000) - 2000;
-        const y = Math.floor(Math.random() * 4000) - 2000;
+        const x = Math.floor(Math.random() * 4600);
+        const y = Math.floor(Math.random() * 2000);
         shadows.push(`${x}px ${y}px ${color}`);
       }
       return shadows.join(', ');
     }
+    // Variante avec halo pour les étoiles brillantes (réalisme : diffraction douce)
+    function generateGlowStarShadows(count, color, glowColor, glow) {
+      const shadows = [];
+      for (let i = 0; i < count; i++) {
+        const x = Math.floor(Math.random() * 4600);
+        const y = Math.floor(Math.random() * 2000);
+        shadows.push(`${x}px ${y}px 0 0 ${color}`);
+        shadows.push(`${x}px ${y}px ${glow}px 1px ${glowColor}`);
+      }
+      return shadows.join(', ');
+    }
 
-    function createStarLayer(parent, { count, size, color, duration }) {
+    function createStarLayer(parent, { count, size, color, duration, glowColor, glow }) {
       const layer = document.createElement('div');
       layer.className = 'star-layer';
       layer.style.animationDuration = duration + 's';
 
-      const shadows = generateStarShadows(count, color);
+      const shadows = glow
+        ? generateGlowStarShadows(count, color, glowColor, glow)
+        : generateStarShadows(count, color);
 
       const d1 = document.createElement('div');
       d1.className = 'star-dot';
@@ -1592,10 +1607,14 @@
     (function initStarLayers() {
       const wrap = document.getElementById('sky-parallax');
       if (!wrap) return;
-      // Adapté aux couleurs Manodrey : blanc dominant + accent doré pour les plus grosses
-      createStarLayer(wrap, { count: 1000, size: 1, color: 'rgba(255, 255, 255, 0.85)', duration: 50 });
-      createStarLayer(wrap, { count: 400,  size: 2, color: '#FFFFFF',                    duration: 100 });
-      createStarLayer(wrap, { count: 200,  size: 3, color: '#FFE9C4',                    duration: 150 });
+      // Ciel réaliste : 5 couches de profondeur. Une majorité d'étoiles faibles,
+      // de moins en moins nombreuses à mesure qu'elles brillent (distribution naturelle),
+      // les plus lointaines dérivent lentement, teintes blanc/bleu/or variées.
+      createStarLayer(wrap, { count: 2200, size: 1, color: 'rgba(255, 255, 255, 0.35)', duration: 220 });
+      createStarLayer(wrap, { count: 1400, size: 1, color: 'rgba(255, 255, 255, 0.65)', duration: 160 });
+      createStarLayer(wrap, { count: 650,  size: 2, color: 'rgba(255, 255, 255, 0.9)',  duration: 110 });
+      createStarLayer(wrap, { count: 180,  size: 2, color: 'rgba(184, 221, 248, 0.9)',  duration: 90 });
+      createStarLayer(wrap, { count: 140,  size: 3, color: '#FFE9C4', glowColor: 'rgba(255, 233, 196, 0.4)', glow: 6, duration: 70 });
     })();
 
 
