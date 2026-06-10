@@ -986,15 +986,18 @@
       line-height: 1.5;
     }
     /* Panneau chiffres-clés — apparaît en fondu au survol de "Synopsis complet",
-       ancré dans la rangée des CTAs, ~2cm à droite du bouton */
+       ancré dans la rangée des CTAs, ~2cm à droite du bouton.
+       Même police que le bouton (Inter letterspaced), lignes étalées en escalier. */
     .featured-synopsis {
       align-self: center;
       margin-left: 40px;
       transform: translateX(24px);
-      max-width: 420px;
+      max-width: 640px;
       text-align: left;
-      font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(18px, 1.6vw, 23px);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
       line-height: 1.6;
       color: var(--text);
       opacity: 0;
@@ -1007,16 +1010,19 @@
       transform: translateX(0);
       filter: blur(0);
     }
-    .featured-synopsis p { margin: 0 0 6px; }
+    .featured-synopsis p { margin: 0 0 22px; white-space: nowrap; }
+    .featured-synopsis p:nth-child(2) { margin-left: 56px; }
+    .featured-synopsis p:nth-child(3) { margin-left: 112px; }
+    .featured-synopsis p:nth-child(4) { margin-left: 168px; }
     .featured-synopsis strong {
       color: var(--gold-light);
-      font-weight: 600;
+      font-weight: 700;
     }
     .featured-synopsis .synopsis-closing {
-      margin-top: 18px;
+      margin: 10px 0 0 224px;
       font-style: italic;
       color: var(--gold);
-      font-size: 1.15em;
+      font-size: 1.1em;
     }
     @media (max-width: 1000px) {
       .featured-synopsis { display: none; }
