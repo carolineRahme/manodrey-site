@@ -1558,12 +1558,16 @@
       }
     }
     // ============ STARFIELD — parallax multi-couches (box-shadow trick) ============
-    // x couvre 0..4600px pour remplir les très grands écrans bord à bord ;
+    // x couvre toute la largeur réelle de l'écran (adaptatif, jamais de zone vide) ;
     // y couvre 0..2000px = la hauteur d'une couche, pour une boucle verticale propre.
+    function skySpan() {
+      return Math.max(4800, (window.screen && window.screen.width ? window.screen.width : window.innerWidth) * 2, window.innerWidth + 600);
+    }
     function generateStarShadows(count, color) {
+      const span = skySpan();
       const shadows = [];
       for (let i = 0; i < count; i++) {
-        const x = Math.floor(Math.random() * 4600);
+        const x = Math.floor(Math.random() * span);
         const y = Math.floor(Math.random() * 2000);
         shadows.push(`${x}px ${y}px ${color}`);
       }
@@ -1571,9 +1575,10 @@
     }
     // Variante avec halo pour les étoiles brillantes (réalisme : diffraction douce)
     function generateGlowStarShadows(count, color, glowColor, glow) {
+      const span = skySpan();
       const shadows = [];
       for (let i = 0; i < count; i++) {
-        const x = Math.floor(Math.random() * 4600);
+        const x = Math.floor(Math.random() * span);
         const y = Math.floor(Math.random() * 2000);
         shadows.push(`${x}px ${y}px 0 0 ${color}`);
         shadows.push(`${x}px ${y}px ${glow}px 1px ${glowColor}`);
@@ -1610,11 +1615,14 @@
       // Ciel réaliste : 5 couches de profondeur. Une majorité d'étoiles faibles,
       // de moins en moins nombreuses à mesure qu'elles brillent (distribution naturelle),
       // les plus lointaines dérivent lentement, teintes blanc/bleu/or variées.
-      createStarLayer(wrap, { count: 2200, size: 1, color: 'rgba(255, 255, 255, 0.35)', duration: 220 });
-      createStarLayer(wrap, { count: 1400, size: 1, color: 'rgba(255, 255, 255, 0.65)', duration: 160 });
-      createStarLayer(wrap, { count: 650,  size: 2, color: 'rgba(255, 255, 255, 0.9)',  duration: 110 });
-      createStarLayer(wrap, { count: 180,  size: 2, color: 'rgba(184, 221, 248, 0.9)',  duration: 90 });
-      createStarLayer(wrap, { count: 140,  size: 3, color: '#FFE9C4', glowColor: 'rgba(255, 233, 196, 0.4)', glow: 6, duration: 70 });
+      // Densité proportionnelle à la largeur réelle de l'écran (d = étoiles pour 4800px).
+      const d = skySpan() / 4800;
+      const n = (base) => Math.round(base * d);
+      createStarLayer(wrap, { count: n(2200), size: 1, color: 'rgba(255, 255, 255, 0.35)', duration: 220 });
+      createStarLayer(wrap, { count: n(1400), size: 1, color: 'rgba(255, 255, 255, 0.65)', duration: 160 });
+      createStarLayer(wrap, { count: n(650),  size: 2, color: 'rgba(255, 255, 255, 0.9)',  duration: 110 });
+      createStarLayer(wrap, { count: n(180),  size: 2, color: 'rgba(184, 221, 248, 0.9)',  duration: 90 });
+      createStarLayer(wrap, { count: n(140),  size: 3, color: '#FFE9C4', glowColor: 'rgba(255, 233, 196, 0.4)', glow: 6, duration: 70 });
     })();
 
 
