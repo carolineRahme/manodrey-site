@@ -4,6 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Manodrey — Là où l'imaginaire prend vie</title>
+  <meta name="description" content="Manodrey, société de production audiovisuelle à Paris. Films, séries et histoires qui prennent vie — dont La Salle, série originale qui raconte avec humour les petits faits de société d'une salle de sport." />
+  <meta name="theme-color" content="#01030A" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Manodrey — Là où l'imaginaire prend vie" />
+  <meta property="og:description" content="Société de production audiovisuelle à Paris. Films, séries et histoires qui prennent vie." />
+  <meta property="og:image" content="assets/hero-poster.jpg" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Allura&family=Anton&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700;800;900&family=Pinyon+Script&display=swap" rel="stylesheet" />
@@ -26,6 +34,14 @@
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
+    /* Navigation clavier : focus visible doré, cohérent avec la charte */
+    :focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+    /* Supprime le délai de tap 300ms sur mobile */
+    a, button { touch-action: manipulation; }
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--night);
@@ -146,6 +162,31 @@
     @media (prefers-reduced-motion: reduce) {
       .star { animation: none; opacity: 0.5; }
       .meteor-canvas { display: none; }
+      /* Tout le contenu visible immédiatement, sans animations */
+      .slit-text, .slit-text.revealed {
+        clip-path: none !important;
+        -webkit-clip-path: none !important;
+        transition: none !important;
+      }
+      .hero-tagline-text, .hero-tagline-text.written {
+        clip-path: none !important;
+        -webkit-clip-path: none !important;
+        transition: none !important;
+      }
+      header, .hero-sub, .hero .hero-actions, .fab {
+        opacity: 1 !important;
+        transform: translateX(-50%) translateY(0);
+        transition: none !important;
+        filter: none !important;
+      }
+      .hero-sub, .hero .hero-actions, .fab { transform: none !important; }
+      .reveal, .reveal-stagger > * {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+      }
+      .hero-tagline .sparkle, .click-sparkle { display: none !important; }
+      .tagline-star { animation: none !important; }
     }
 
     /* ============ HEADER (no pill, transparent) ============ */
@@ -1036,8 +1077,11 @@
     }
     .featured-social a {
       display: inline-flex;
-      width: 24px;
-      height: 24px;
+      /* Zone de tap 44px (accessibilité) pour une icône visible de 24px */
+      width: 44px;
+      height: 44px;
+      padding: 10px;
+      margin: -10px;
       color: var(--text-2);
       transition: color 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -1319,7 +1363,7 @@
       gap: 48px;
       margin-bottom: 64px;
     }
-    .footer-col h4 {
+    .footer-col h3 {
       font-size: 11px;
       letter-spacing: 0.3em;
       text-transform: uppercase;
@@ -1406,6 +1450,8 @@
       .footer-bottom { justify-content: center; text-align: center; }
       .scroll-cue { display: none; }
       .contact { padding-top: 100px; padding-bottom: 100px; }
+      /* Logos sociaux : pleine ligne sous la meta, centres */
+      .featured-social { margin-left: 0; width: 100%; margin-top: 10px; }
     }
     @media (max-width: 540px) {
       .productions-grid { grid-template-columns: 1fr; }
@@ -1544,14 +1590,14 @@
         <span class="signature">Là où l'imaginaire prend vie.</span>
       </div>
       <div class="footer-col">
-        <h4>Productions</h4>
+        <h3>Productions</h3>
         <ul>
           <li><a href="#la-salle">La Salle</a></li>
           <li><a href="#">Showreel</a></li>
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Maison</h4>
+        <h3>Maison</h3>
         <ul>
           <li><a href="#founder">Fondateur</a></li>
           <li><a href="#">À propos</a></li>
@@ -1559,7 +1605,7 @@
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Suivre</h4>
+        <h3>Suivre</h3>
         <ul>
           <li><a href="https://www.instagram.com/lasallelaserie?igsh=cmU3amR4cXlvMW13" target="_blank" rel="noopener">Instagram</a></li>
           <li><a href="https://www.tiktok.com/@manodreytv93?_r=1&amp;_t=ZN-94leONYx4Ao" target="_blank" rel="noopener">TikTok</a></li>
@@ -2946,6 +2992,7 @@
         for (let i = 0; i < 14; i++) {
           const s = document.createElement('span');
           s.className = 'click-sparkle';
+          s.setAttribute('aria-hidden', 'true');
           s.textContent = '✦';
           const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.6;
           const dist = 28 + Math.random() * 46;
