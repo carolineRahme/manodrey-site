@@ -3018,25 +3018,29 @@
           document.body.classList.add('story-revealed');
         }
         if (videoEl) {
+          // Démarre toujours le film au début (certains navigateurs restaurent
+          // la position de lecture au rechargement, ce qui fausserait la séquence).
+          videoEl.addEventListener('loadedmetadata', () => { try { videoEl.currentTime = 0; } catch (e) {} }, { once: true });
+          if (videoEl.readyState >= 1) { try { videoEl.currentTime = 0; } catch (e) {} }
+          function revealEverything() { skipHeroIntro(); writeTagline(); revealStory(); }
+          let __lastT = 0;
           const onTimeUpdate = () => {
-            if (videoEl.currentTime >= 7.0 && !__heroRevealed) {
-              skipHeroIntro();
-            }
-            if (videoEl.currentTime >= 8.5 && !__taglineWritten) {
-              writeTagline();
-            }
-            if (videoEl.currentTime >= 9.8 && !__storyRevealed) {
-              revealStory();
-            }
+            const t = videoEl.currentTime;
+            // La vidéo est repartie au début (boucle) => le film s'est joué une fois
+            // en entier : on révèle tout, même si la fenêtre de fin a été manquée.
+            if (t + 0.4 < __lastT) { revealEverything(); }
+            __lastT = t;
+            if (t >= 7.0 && !__heroRevealed) skipHeroIntro();
+            if (t >= 8.5 && !__taglineWritten) writeTagline();
+            if (t >= 9.3 && !__storyRevealed) revealStory();
           };
           videoEl.addEventListener('timeupdate', onTimeUpdate);
-          // Safety net : si la vidéo termine sans que timeupdate ait fire les triggers
-          videoEl.addEventListener('ended', () => {
-            skipHeroIntro();
-            writeTagline();
-            revealStory();
-            // (pas de pause — l'attribut "loop" relance le film automatiquement)
-          });
+          // Filet de sécurité : fin de lecture (si jamais "loop" est retiré).
+          videoEl.addEventListener('ended', revealEverything);
+          // Garantie absolue : si les events sont manqués (onglet en arrière-plan,
+          // vidéo qui ne charge pas), tout apparaît ~1,5s après la durée du film.
+          const dur = isFinite(videoEl.duration) && videoEl.duration > 0 ? videoEl.duration : 10;
+          setTimeout(revealEverything, (dur + 1.5) * 1000);
         }
 
         // Click sur la zone vidéo du hero → skip tout l'intro : Manodrey,
