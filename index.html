@@ -1717,12 +1717,12 @@
           // Scintillement : amplitude modérée, jamais éteint (min reste > ~30% de la base).
           // On borne aussi l'amplitude par (1 - a) pour que le pic ne dépasse pas 1 :
           // les étoiles brillantes ne s'aplatissent donc plus contre le plafond (oscillation symétrique).
-          let amp = a * (0.18 + R() * 0.22);   // 0.18–0.40 × base ⇒ min ≈ 0.60×base
+          let amp = a * (0.45 + R() * 0.45);   // 0.45–0.90 × base ⇒ scintillement plus marqué
           const headroom = 1 - a;
           if (amp > headroom) amp = headroom;  // pic ≤ 1 : pas de plateau sur les brillantes
           this.twAmp[i] = amp;
-          // période ~2–6s → vitesse angulaire 2π/période
-          this.twSpeed[i] = (2 * Math.PI) / (2 + R() * 4);
+          // période ~1,1–4s → clignotement plus vif
+          this.twSpeed[i] = (2 * Math.PI) / (1.1 + R() * 2.9);
           this.twPhase[i] = R() * Math.PI * 2;       // désynchronisé
         }
       }
