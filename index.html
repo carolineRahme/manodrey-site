@@ -994,6 +994,7 @@
     .featured-synopsis.visible {
       opacity: 1;
       transform: translateX(0);
+      pointer-events: auto;   /* survolable pour aller lire le texte */
     }
     .featured-synopsis p { margin: 0 0 10px; }
     .featured-synopsis strong {
@@ -3073,11 +3074,18 @@
       const cta = document.getElementById('synopsis-cta');
       const panel = document.getElementById('featured-synopsis');
       if (!cta || !panel) return;
-      cta.addEventListener('mouseenter', () => panel.classList.add('visible'));
-      cta.addEventListener('mouseleave', () => panel.classList.remove('visible'));
+      // Le panneau apparaît au survol du bouton OU du panneau, et reste affiché
+      // tant que la souris est sur l'un des deux (on peut donc aller lire le texte).
+      let hideTimer = null;
+      const show = () => { clearTimeout(hideTimer); panel.classList.add('visible'); };
+      const hideSoon = () => { clearTimeout(hideTimer); hideTimer = setTimeout(() => panel.classList.remove('visible'), 220); };
+      cta.addEventListener('mouseenter', show);
+      cta.addEventListener('mouseleave', hideSoon);
+      panel.addEventListener('mouseenter', show);
+      panel.addEventListener('mouseleave', hideSoon);
       // Accessibilité clavier : focus = survol
-      cta.addEventListener('focus', () => panel.classList.add('visible'));
-      cta.addEventListener('blur', () => panel.classList.remove('visible'));
+      cta.addEventListener('focus', show);
+      cta.addEventListener('blur', hideSoon);
 
       // Aligne le haut du panneau sur la ligne du pitch (« …raconte avec »),
       // robuste à toutes les largeurs (le pitch se replie différemment).
