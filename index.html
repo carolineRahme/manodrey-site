@@ -977,8 +977,8 @@
     .featured-synopsis {
       position: absolute;
       right: 0;
-      top: 50%;
-      transform: translateY(-50%) translateX(24px);
+      top: 0;                /* aligné sur le pitch via JS (syncSynopsisTop) */
+      transform: translateX(24px);
       max-width: 480px;
       text-align: left;
       font-family: 'Inter', sans-serif;
@@ -994,7 +994,7 @@
     }
     .featured-synopsis.visible {
       opacity: 1;
-      transform: translateY(-50%) translateX(0);
+      transform: translateX(0);
       filter: blur(0);
     }
     .featured-synopsis p { margin: 0 0 10px; }
@@ -1475,13 +1475,13 @@
       <div class="hero-actions">
         <a href="#" class="cta gold"><span class="play-icon"></span>Bande-annonce</a>
         <a href="#" class="cta outline" id="synopsis-cta">Synopsis complet</a>
-        <aside class="featured-synopsis" id="featured-synopsis" aria-hidden="true">
-          <p>En France, environ <strong>5 500</strong> salles de sport accueillent chaque jour des milliers d'anonymes.</p>
-          <p>Plus de <strong>2 millions</strong> de Français y sont abonnés, et <strong>59%</strong> y reviennent plusieurs fois par semaine.</p>
-          <p>Entre deux machines, des vies se croisent, se racontent et parfois se transforment.</p>
-          <p class="synopsis-closing">voici leurs histoires</p>
-        </aside>
       </div>
+      <aside class="featured-synopsis" id="featured-synopsis" aria-hidden="true">
+        <p>En France, environ <strong>5 500</strong> salles de sport accueillent chaque jour des milliers d'anonymes.</p>
+        <p>Plus de <strong>2 millions</strong> de Français y sont abonnés, et <strong>59%</strong> y reviennent plusieurs fois par semaine.</p>
+        <p>Entre deux machines, des vies se croisent, se racontent et parfois se transforment.</p>
+        <p class="synopsis-closing">voici leurs histoires</p>
+      </aside>
     </div>
   </section>
 
@@ -3067,6 +3067,18 @@
       // Accessibilité clavier : focus = survol
       cta.addEventListener('focus', () => panel.classList.add('visible'));
       cta.addEventListener('blur', () => panel.classList.remove('visible'));
+
+      // Aligne le haut du panneau sur la ligne du pitch (« …raconte avec »),
+      // robuste à toutes les largeurs (le pitch se replie différemment).
+      const pitch = document.querySelector('.featured-pitch');
+      function syncSynopsisTop() {
+        if (!pitch || getComputedStyle(panel).display === 'none') return;
+        panel.style.top = pitch.offsetTop + 'px';
+      }
+      syncSynopsisTop();
+      window.addEventListener('resize', syncSynopsisTop, { passive: true });
+      window.addEventListener('load', syncSynopsisTop);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncSynopsisTop);
     })();
 
     // Éclat d'étoiles au clic sur les logos réseaux sociaux
