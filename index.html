@@ -76,80 +76,25 @@
       inset: 0;
       width: 100vw;
       height: 100vh;
+      height: 100dvh;        /* couvre le viewport mobile dynamique (URL bar) */
       pointer-events: none;
       z-index: 0;
       overflow: hidden;
-      background:
-        linear-gradient(180deg, #000000 0%, #01020A 60%, #01030D 100%);
+      background: #000;       /* fond noir pur, sans dégradé */
     }
     #global-sky .meteor-canvas { z-index: 2; }
 
-    /* 3-layer parallax starfield (box-shadow trick) */
-    .parallax-wrap {
+    /* Canvas starfield (dense, realistic, twinkling) — below meteors */
+    #global-sky .star-canvas {
       position: absolute;
       inset: 0;
-      will-change: transform;
-      transform: translate3d(0, 0, 0);
-    }
-    .star-layer {
-      position: absolute;
-      top: 0;
-      left: 0;
       width: 100%;
-      height: 2000px;
-      animation: star-drift linear infinite;
-    }
-    .star-dot {
-      position: absolute;
-      background: transparent;
-      border-radius: 50%;
-    }
-    .star-dot.dup { top: 2000px; }
-
-    @keyframes star-drift {
-      from { transform: translateY(0); }
-      to   { transform: translateY(-2000px); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .star-layer { animation: none; }
-    }
-
-    /* ============ STARFIELD ============ */
-    .starfield {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
+      height: 100%;
+      display: block;
       pointer-events: none;
-      z-index: 0;
+      z-index: 1;
     }
-    .star {
-      position: absolute;
-      background: var(--white);
-      border-radius: 50%;
-      opacity: 0;
-      will-change: opacity, transform;
-      animation: twinkle var(--tw, 4s) ease-in-out infinite;
-      animation-delay: var(--tw-delay, 0s);
-    }
-    .star.bright {
-      background: var(--gold-light);
-      box-shadow: 0 0 5px 1px rgba(255, 233, 196, 0.55);
-    }
-    .star.gold {
-      background: var(--gold);
-      box-shadow: 0 0 4px 1px rgba(212, 175, 122, 0.5);
-    }
-    .star.blue {
-      background: #B8DDF8;
-      box-shadow: 0 0 4px 1px rgba(184, 221, 248, 0.45);
-    }
-    .star.large {
-      box-shadow: 0 0 6px 1.5px rgba(255, 255, 255, 0.75);
-    }
-    @keyframes twinkle {
-      0%, 100% { opacity: 0.18; transform: scale(0.85); }
-      50%      { opacity: 0.95; transform: scale(1.15); }
-    }
+
     /* Realistic meteor canvas */
     .meteor-canvas {
       position: absolute;
@@ -160,7 +105,6 @@
       z-index: 2;
     }
     @media (prefers-reduced-motion: reduce) {
-      .star { animation: none; opacity: 0.5; }
       .meteor-canvas { display: none; }
       /* Tout le contenu visible immédiatement, sans animations */
       .slit-text, .slit-text.revealed {
@@ -1464,7 +1408,7 @@
 
   <!-- ============ GLOBAL ANIMATED SKY (persistent fixed background) ============ -->
   <div id="global-sky" aria-hidden="true">
-    <div class="parallax-wrap" id="sky-parallax"></div>
+    <canvas class="star-canvas" id="sky-stars"></canvas>
     <canvas class="meteor-canvas" id="sky-meteors"></canvas>
   </div>
 
@@ -1627,122 +1571,265 @@
       else header.classList.remove('scrolled');
     });
 
-    // ============ STARFIELD ============
-    function createStarfield(containerId, starCount) {
-      const container = document.getElementById(containerId);
-      if (!container) return;
-      for (let i = 0; i < starCount; i++) {
-        const star = document.createElement('div');
-        // Skew sizes toward tiny — real night sky has mostly faint stars
-        const size = Math.pow(Math.random(), 2.2) * 2.2 + 0.4;
-        let cls = 'star';
-        const r = Math.random();
-        if (size > 1.8)      cls += ' large';
-        if (r < 0.04)        cls += ' bright';
-        else if (r < 0.08)   cls += ' gold';
-        else if (r < 0.16)   cls += ' blue';
-        star.className = cls;
-        star.style.width = size + 'px';
-        star.style.height = size + 'px';
-        star.style.left = Math.random() * 100 + '%';
-        star.style.top = Math.random() * 100 + '%';
-        star.style.setProperty('--tw', (2 + Math.random() * 5) + 's');
-        star.style.setProperty('--tw-delay', (Math.random() * 6) + 's');
-        container.appendChild(star);
+    // ============ STARFIELD — canvas dense, réaliste, scintillant ============
+    // Un seul <canvas id="sky-stars"> rendu en Canvas 2D. Des milliers d'étoiles
+    // fines MONOCHROMES (blanc→gris) sur fond NOIR PUR, distribution de magnitude
+    // naturelle (~70% faibles, ~25% moyennes, ~5% brillantes). Chaque étoile est
+    // un point fillRect net (pas de halo, pas de glow), avec globalAlpha individuel.
+    // Scintillement sinusoïdal désynchronisé (période 2–6s), dérive globale très
+    // lente avec ré-enroulement (wrap), parallaxe souris subtile.
+    // Tableaux parallèles Float32Array, AUCUNE allocation par frame, DPR plafonné à 2.
+    class StarfieldCanvas {
+      constructor(canvas, opts = {}) {
+        this.canvas = canvas;
+        // alpha:false → fond noir opaque rapide, pas de coût de composition transparente
+        this.ctx = canvas.getContext('2d', { alpha: false });
+        // 1 étoile par ~1200 px² de viewport (densité long-exposure)
+        this.density = opts.density || (1 / 600);
+        this.minStars = opts.minStars || 800;
+        this.maxStars = opts.maxStars || 14000;
+        this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+        // Dérive globale (px/s en coord. CSS) — quelques px sur de longues secondes
+        this.driftX = opts.driftX != null ? opts.driftX : 0.9;   // diagonale très douce
+        this.driftY = opts.driftY != null ? opts.driftY : 1.6;   // ~vertical
+        this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        // Parallaxe souris (offset CSS px cible, lissé chaque frame)
+        this.parallaxX = 0; this.parallaxY = 0;
+        this._px = 0; this._py = 0;
+        this.cssW = 0; this.cssH = 0;
+        this.n = 0;
+        // Tableaux parallèles (alloués au resize selon le nombre d'étoiles)
+        this.sx = null; this.sy = null;        // position de base normalisée [0,1)
+        this.ssz = null;                        // taille du carré (px : 1, 1.5, 2–2.5)
+        this.baseA = null;                      // alpha de base (magnitude)
+        this.twAmp = null; this.twSpeed = null; this.twPhase = null; // scintillement
+        this.core = null;                       // 1 = cœur doux (5% les plus brillantes)
+        this._raf = 0;
+        this._resizeRaf = 0;                    // debounce du resize (rAF)
+        this._t0 = performance.now();
+
+        this._onResize = this._onResize.bind(this);
+        this._applyResize = this._applyResize.bind(this);
+        this._tick = this._tick.bind(this);
+        window.addEventListener('resize', this._onResize, { passive: true });
+        window.addEventListener('orientationchange', this._onResize, { passive: true });
+
+        this.resize();
+        if (this.reduced) {
+          this._renderStatic();    // champ figé : ni scintillement ni dérive
+        } else {
+          this._raf = requestAnimationFrame(this._tick);
+        }
+      }
+
+      // Dimensions logiques : on lit la taille réelle du canvas (inset:0 dans une
+      // boîte 100vh/100dvh) → couvre le viewport mobile sans bande vide sous l'URL bar.
+      _measure() {
+        const w = this.canvas.clientWidth || window.innerWidth;
+        const h = this.canvas.clientHeight || window.innerHeight;
+        return { w, h };
+      }
+
+      // Resize debouncé : on coalescie les rafales (drag fenêtre, URL bar mobile) en
+      // un seul recalcul par frame d'affichage.
+      _onResize() {
+        if (this._resizeRaf) return;
+        this._resizeRaf = requestAnimationFrame(this._applyResize);
+      }
+      _applyResize() {
+        this._resizeRaf = 0;
+        this.resize();
+      }
+
+      resize() {
+        const { w, h } = this._measure();
+        // Ignore les micro-variations de hauteur seule (URL bar mobile) qui ne
+        // changent pas le nombre d'étoiles : évite le re-tirage / téléportation.
+        const sameW = (w === this.cssW);
+        const oldW = this.cssW, oldH = this.cssH;
+        this.cssW = w; this.cssH = h;
+        this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+        // Backing store en pixels physiques (couvre ultra-wide), CSS géré par le layout
+        const pw = Math.round(w * this.dpr), ph = Math.round(h * this.dpr);
+        if (this.canvas.width !== pw)  this.canvas.width = pw;
+        if (this.canvas.height !== ph) this.canvas.height = ph;
+
+        let n = Math.round(w * h * this.density);
+        n = Math.max(this.minStars, Math.min(this.maxStars, n));
+
+        if (n !== this.n) {
+          // Le nombre change → (ré)allocation + tirage complet d'un nouveau champ.
+          this._alloc(n);
+          this._populate();
+        } else if (!sameW && oldW > 0) {
+          // Même nombre mais largeur changée : positions normalisées [0,1), donc
+          // aucune reshuffle nécessaire — elles se redéploient toutes seules.
+          // (rien à faire : sx/sy sont en fraction du viewport)
+        }
+        // height-only swing (URL bar) : positions normalisées → rien à recalculer.
+
+        if (this.reduced) this._renderStatic();
+      }
+
+      _alloc(n) {
+        this.n = n;
+        this.sx = new Float32Array(n);   // fraction [0,1) de la largeur
+        this.sy = new Float32Array(n);   // fraction [0,1) de la hauteur
+        this.ssz = new Float32Array(n);
+        this.baseA = new Float32Array(n);
+        this.twAmp = new Float32Array(n);
+        this.twSpeed = new Float32Array(n);
+        this.twPhase = new Float32Array(n);
+        this.core = new Uint8Array(n);
+      }
+
+      _populate() {
+        const n = this.n;
+        const R = Math.random;
+        for (let i = 0; i < n; i++) {
+          // Positions normalisées : indépendantes de la taille → resize sans reshuffle.
+          this.sx[i] = R();
+          this.sy[i] = R();
+          // Distribution de magnitude naturelle : ~70% faibles, ~25% moyennes, ~5% brillantes
+          const m = R();
+          let a, isCore = 0;
+          if (m < 0.70) {            // faibles
+            a = 0.20 + R() * 0.25;   // 0.20–0.45
+          } else if (m < 0.95) {     // moyennes
+            a = 0.50 + R() * 0.20;   // 0.50–0.70
+          } else {                   // brillantes
+            a = 0.80 + R() * 0.20;   // 0.80–1.0
+            isCore = 1;              // seules les plus brillantes ont un cœur doux 1px
+          }
+          // Tailles : ~85% 1px, ~13% ~1.5px, ~2% 2–2.5px
+          const s = R();
+          let sz;
+          if (s < 0.85)      sz = 1.0;
+          else if (s < 0.98) sz = 1.5;
+          else               sz = 2.0 + R() * 0.5; // 2–2.5px
+          this.ssz[i] = sz;
+          this.baseA[i] = a;
+          this.core[i] = isCore;
+          // Scintillement : amplitude modérée, jamais éteint (min reste > ~30% de la base).
+          // On borne aussi l'amplitude par (1 - a) pour que le pic ne dépasse pas 1 :
+          // les étoiles brillantes ne s'aplatissent donc plus contre le plafond (oscillation symétrique).
+          let amp = a * (0.18 + R() * 0.22);   // 0.18–0.40 × base ⇒ min ≈ 0.60×base
+          const headroom = 1 - a;
+          if (amp > headroom) amp = headroom;  // pic ≤ 1 : pas de plateau sur les brillantes
+          this.twAmp[i] = amp;
+          // période ~2–6s → vitesse angulaire 2π/période
+          this.twSpeed[i] = (2 * Math.PI) / (2 + R() * 4);
+          this.twPhase[i] = R() * Math.PI * 2;       // désynchronisé
+        }
+      }
+
+      // Offset parallaxe (CSS px) fourni par le pointeur, lissé dans le tick.
+      setParallax(x, y) { this.parallaxX = x; this.parallaxY = y; }
+
+      _renderStatic() {
+        const ctx = this.ctx, dpr = this.dpr, w = this.cssW, h = this.cssH;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#fff';
+        const n = this.n, sx = this.sx, sy = this.sy, ssz = this.ssz, baseA = this.baseA;
+        for (let i = 0; i < n; i++) {
+          ctx.globalAlpha = baseA[i];
+          const s = ssz[i];
+          ctx.fillRect(sx[i] * w, sy[i] * h, s, s);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      _tick(now) {
+        const ctx = this.ctx, dpr = this.dpr;
+        const w = this.cssW, h = this.cssH;
+        const t = (now - this._t0) / 1000; // secondes
+
+        // Dérive globale en px (non ré-enroulée ici : le wrap se fait par étoile via modulo)
+        const dx = this.driftX * t;
+        const dy = this.driftY * t;
+
+        // Parallaxe souris lissée (vers la cible fournie par le pointeur)
+        this._px += (this.parallaxX - this._px) * 0.08;
+        this._py += (this.parallaxY - this._py) * 0.08;
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, h);          // fond noir pur, repeint chaque frame
+        ctx.fillStyle = '#fff';            // étoiles monochromes blanches
+
+        const n = this.n;
+        const sx = this.sx, sy = this.sy, ssz = this.ssz, core = this.core;
+        const baseA = this.baseA, twAmp = this.twAmp, twSpeed = this.twSpeed, twPhase = this.twPhase;
+        // Offset total (dérive + parallaxe) ; le modulo par étoile encaisse n'importe quelle amplitude.
+        const ox = dx + this._px, oy = dy + this._py;
+
+        for (let i = 0; i < n; i++) {
+          // scintillement sinusoïdal, jamais sous baseA - twAmp (> ~30% base), pic ≤ 1
+          let a = baseA[i] + twAmp[i] * Math.sin(t * twSpeed[i] + twPhase[i]);
+          if (a > 1) a = 1; else if (a < 0) a = 0;
+          ctx.globalAlpha = a;
+          // position absolue dérivée + parallaxe, ré-enroulée par modulo (robuste à tout offset)
+          let x = (sx[i] * w + ox) % w; if (x < 0) x += w;
+          let y = (sy[i] * h + oy) % h; if (y < 0) y += h;
+          const s = ssz[i];
+          // point net (pas de halo)
+          ctx.fillRect(x, y, s, s);
+          // Wrap sans couture pour les étoiles dimensionnées : si elles débordent le
+          // bord droit/bas, on dessine la copie qui entre par le bord opposé.
+          const overX = (x + s > w);
+          const overY = (y + s > h);
+          if (s > 1) {
+            if (overX)          ctx.fillRect(x - w, y, s, s);
+            if (overY)          ctx.fillRect(x, y - h, s, s);
+            if (overX && overY) ctx.fillRect(x - w, y - h, s, s); // coin
+          }
+          // cœur doux 1px sur les rares brillantes (avec wrap pareil)
+          if (core[i]) {
+            ctx.globalAlpha = a * 0.25;
+            const cx = x - 0.5, cy = y - 0.5, cs = s + 1;
+            ctx.fillRect(cx, cy, cs, cs);
+            if (cx + cs > w)              ctx.fillRect(cx - w, cy, cs, cs);
+            if (cy + cs > h)              ctx.fillRect(cx, cy - h, cs, cs);
+            if (cx + cs > w && cy + cs > h) ctx.fillRect(cx - w, cy - h, cs, cs);
+          }
+        }
+
+        ctx.globalAlpha = 1;
+        this._raf = requestAnimationFrame(this._tick);
+      }
+
+      destroy() {
+        cancelAnimationFrame(this._raf);
+        if (this._resizeRaf) cancelAnimationFrame(this._resizeRaf);
+        window.removeEventListener('resize', this._onResize);
+        window.removeEventListener('orientationchange', this._onResize);
       }
     }
-    // ============ STARFIELD — parallax multi-couches (box-shadow trick) ============
-    // x couvre toute la largeur réelle de l'écran (adaptatif, jamais de zone vide) ;
-    // y couvre 0..2000px = la hauteur d'une couche, pour une boucle verticale propre.
-    function skySpan() {
-      return Math.max(4800, (window.screen && window.screen.width ? window.screen.width : window.innerWidth) * 2, window.innerWidth + 600);
-    }
-    function generateStarShadows(count, color) {
-      const span = skySpan();
-      const shadows = [];
-      for (let i = 0; i < count; i++) {
-        const x = Math.floor(Math.random() * span);
-        const y = Math.floor(Math.random() * 2000);
-        shadows.push(`${x}px ${y}px ${color}`);
+
+    // Init starfield + parallaxe souris pilotant le canvas (offset subtil).
+    (function initStarfield() {
+      const canvas = document.getElementById('sky-stars');
+      if (!canvas) return;
+      const field = new StarfieldCanvas(canvas);
+      window.__starfield = field;
+
+      // Parallaxe souris : on ne déplace plus de calques DOM, on passe l'offset au canvas.
+      // (Le canvas lisse cet offset cible dans son propre tick.)
+      if (!field.reduced) {
+        const factor = 0.04;   // amplitude (px de décalage par px de déplacement curseur)
+        const cap = 14;        // décalage max du champ (px)
+        window.addEventListener('pointermove', (e) => {
+          const cx = window.innerWidth / 2;
+          const cy = window.innerHeight / 2;
+          let ox = -(e.clientX - cx) * factor;
+          let oy = -(e.clientY - cy) * factor;
+          if (ox > cap) ox = cap; else if (ox < -cap) ox = -cap;
+          if (oy > cap) oy = cap; else if (oy < -cap) oy = -cap;
+          field.setParallax(ox, oy);
+        }, { passive: true });
       }
-      return shadows.join(', ');
-    }
-    // Variante avec halo pour les étoiles brillantes (réalisme : diffraction douce)
-    function generateGlowStarShadows(count, color, glowColor, glow) {
-      const span = skySpan();
-      const shadows = [];
-      for (let i = 0; i < count; i++) {
-        const x = Math.floor(Math.random() * span);
-        const y = Math.floor(Math.random() * 2000);
-        shadows.push(`${x}px ${y}px 0 0 ${color}`);
-        shadows.push(`${x}px ${y}px ${glow}px 1px ${glowColor}`);
-      }
-      return shadows.join(', ');
-    }
-
-    function createStarLayer(parent, { count, size, color, duration, glowColor, glow }) {
-      const layer = document.createElement('div');
-      layer.className = 'star-layer';
-      layer.style.animationDuration = duration + 's';
-
-      const shadows = glow
-        ? generateGlowStarShadows(count, color, glowColor, glow)
-        : generateStarShadows(count, color);
-
-      const d1 = document.createElement('div');
-      d1.className = 'star-dot';
-      d1.style.width = size + 'px';
-      d1.style.height = size + 'px';
-      d1.style.boxShadow = shadows;
-
-      const d2 = d1.cloneNode();
-      d2.classList.add('dup');
-
-      layer.appendChild(d1);
-      layer.appendChild(d2);
-      parent.appendChild(layer);
-    }
-
-    (function initStarLayers() {
-      const wrap = document.getElementById('sky-parallax');
-      if (!wrap) return;
-      // Ciel réaliste : 5 couches de profondeur. Une majorité d'étoiles faibles,
-      // de moins en moins nombreuses à mesure qu'elles brillent (distribution naturelle),
-      // les plus lointaines dérivent lentement, teintes blanc/bleu/or variées.
-      // Densité proportionnelle à la largeur réelle de l'écran (d = étoiles pour 4800px).
-      const d = skySpan() / 4800;
-      const n = (base) => Math.round(base * d);
-      createStarLayer(wrap, { count: n(2200), size: 1, color: 'rgba(255, 255, 255, 0.35)', duration: 220 });
-      createStarLayer(wrap, { count: n(1400), size: 1, color: 'rgba(255, 255, 255, 0.65)', duration: 160 });
-      createStarLayer(wrap, { count: n(650),  size: 2, color: 'rgba(255, 255, 255, 0.9)',  duration: 110 });
-      createStarLayer(wrap, { count: n(180),  size: 2, color: 'rgba(184, 221, 248, 0.9)',  duration: 90 });
-      createStarLayer(wrap, { count: n(140),  size: 3, color: '#FFE9C4', glowColor: 'rgba(255, 233, 196, 0.4)', glow: 6, duration: 70 });
-    })();
-
-
-    // Mouse parallax (subtle, eased)
-    (function initMouseParallax() {
-      const wrap = document.getElementById('sky-parallax');
-      if (!wrap) return;
-      const factor = 0.04;
-      const easing = 0.08;
-      let targetX = 0, targetY = 0;
-      let currentX = 0, currentY = 0;
-
-      window.addEventListener('pointermove', (e) => {
-        const cx = window.innerWidth / 2;
-        const cy = window.innerHeight / 2;
-        targetX = -(e.clientX - cx) * factor;
-        targetY = -(e.clientY - cy) * factor;
-      }, { passive: true });
-
-      function tick() {
-        currentX += (targetX - currentX) * easing;
-        currentY += (targetY - currentY) * easing;
-        wrap.style.transform = `translate3d(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px, 0)`;
-        requestAnimationFrame(tick);
-      }
-      tick();
     })();
 
     // ============ REALISTIC METEORS (Canvas 2D) ============
