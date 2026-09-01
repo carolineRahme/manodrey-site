@@ -3011,10 +3011,11 @@
         // Particules sur tagline/sub/CTAs/nav → déclenchées par l'event "ended" de la vidéo
         __heroSkipParticles = initParticles;
 
-        // Séquence à la fin du film :
-        // 7s  : Manodrey s'écrit en cursive (3s)
-        // 8.5s : tagline "Là où l'imaginaire prend vie" s'écrit
-        // 9.8s (ou ended) : sub + CTAs + FABs apparaissent (story-revealed)
+        // Séquence calée sur le film de 15s (coupe sur le plan de l'étoile à 7,5s,
+        // luminosité qui monte jusqu'à la dernière image) :
+        // 11.5s : Manodrey s'écrit en cursive, quand l'étoile est déjà bien embrasée
+        // 13s   : tagline "Là où l'imaginaire prend vie" s'écrit
+        // 14s (ou ended) : sub + CTAs + FABs apparaissent (story-revealed)
         const videoEl = document.querySelector('.hero-video');
         let __taglineWritten = false;
         let __storyRevealed = false;
@@ -3047,9 +3048,9 @@
             // en entier : on révèle tout, même si la fenêtre de fin a été manquée.
             if (t + 0.4 < __lastT) { revealEverything(); }
             __lastT = t;
-            if (t >= 7.0 && !__heroRevealed) skipHeroIntro();
-            if (t >= 8.5 && !__taglineWritten) writeTagline();
-            if (t >= 9.3 && !__storyRevealed) revealStory();
+            if (t >= 11.5 && !__heroRevealed) skipHeroIntro();
+            if (t >= 13.0 && !__taglineWritten) writeTagline();
+            if (t >= 14.0 && !__storyRevealed) revealStory();
           };
           videoEl.addEventListener('timeupdate', onTimeUpdate);
           // Filet de sécurité : fin de lecture (si jamais "loop" est retiré).
